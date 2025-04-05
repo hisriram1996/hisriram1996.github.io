@@ -1,0 +1,597 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "onpremisesnetwork_name": {
+            "defaultValue": "onpremisesnetwork",
+            "type": "String"
+        },
+        "onpremises_cidr": {
+            "defaultValue": ["10.1.1.0/24"],
+            "type": "array"
+        },
+        "cloudnetwork_name": {
+            "defaultValue": "cloudnetwork",
+            "type": "String"
+        },
+        "cloudnetwork_cidr": {
+            "defaultValue": ["10.2.2.0/24"],
+            "type": "array"
+        },
+        "Username": {
+            "type": "String"
+        },
+        "Password": {
+            "type": "secureString"
+        },
+        "router_name": {
+            "defaultValue": "router",
+            "type": "String"
+        },
+        "routerinterface_name": {
+            "defaultValue": "routerinterface",
+            "type": "String"
+        },
+        "routerip_name": {
+            "defaultValue": "routerip",
+            "type": "String"
+        },
+        "route_name": {
+            "defaultValue": "defaultroute",
+            "type": "String"
+        },
+        "server_name": {
+            "defaultValue": "server",
+            "type": "String"
+        },
+        "serverinterface_name": {
+            "defaultValue": "serverinterface",
+            "type": "String"
+        },
+        "cloudnic_name": {
+            "defaultValue": "cloudnic",
+            "type": "String"
+        },
+        "cloudinstance_name": {
+            "defaultValue": "cloudinstance",
+            "type": "String"
+        },
+        "securitygrp_name": {
+            "defaultValue": "securitygrp",
+            "type": "String"
+        },
+        "cloudgatewayip_name": {
+            "defaultValue": "cloudgatewayip",
+            "type": "String"
+        },
+        "cloudgateway_name": {
+            "defaultValue": "cloudgateway",
+            "type": "String"
+        },
+        "localgateway_name": {
+            "defaultValue": "localgateway",
+            "type": "String"
+        },
+        "cloudvpn_name": {
+            "defaultValue": "cloudvpn",
+            "type": "String"
+        },
+        "presharedkey": {
+            "type": "secureString"
+        }
+    },
+    "functions": [],
+    "variables": {},
+    "resources": [
+        {
+            "name": "[parameters('onpremisesnetwork_name')]",
+            "type": "Microsoft.Network/virtualNetworks",
+            "apiVersion": "2023-11-01",
+            "location": "[resourceGroup().location]",
+            "tags": {},
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/routeTables', parameters('route_name'))]",
+                "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('securitygrp_name'))]"
+            ],
+            "properties": {
+                "addressSpace": {
+                    "addressPrefixes": [
+                        "[parameters('onpremises_cidr')[0]]"
+                    ]
+                },
+                "subnets": [
+                    {
+                        "name": "routersubnet",
+                        "properties": {
+                            "addressPrefix": "[cidrSubnet(parameters('onpremises_cidr')[0], 29, 0)]",
+                            "networkSecurityGroup": {
+                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('securitygrp_name'))]"
+                            }
+                        }
+                    },
+                    {
+                        "name": "serversubnet",
+                        "properties": {
+                            "addressPrefix": "[cidrSubnet(parameters('onpremises_cidr')[0], 29, 1)]",
+                            "routeTable": {
+                                "id": "[resourceId('Microsoft.Network/routeTables', parameters('route_name'))]"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "[parameters('cloudnetwork_name')]",
+            "type": "Microsoft.Network/virtualNetworks",
+            "apiVersion": "2023-11-01",
+            "location": "[resourceGroup().location]",
+            "tags": {},
+            "dependsOn": [],
+            "properties": {
+                "addressSpace": {
+                    "addressPrefixes": [
+                        "[parameters('cloudnetwork_cidr')[0]]"
+                    ]
+                },
+                "subnets": [
+                    {
+                        "name": "GatewaySubnet",
+                        "properties": {
+                            "addressPrefix": "[cidrSubnet(parameters('cloudnetwork_cidr')[0], 27, 0)]"
+                        }
+                    },
+                    {
+                        "name": "AzureVMSubnet",
+                        "properties": {
+                            "addressPrefix": "[cidrSubnet(parameters('cloudnetwork_cidr')[0], 27, 1)]"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "[parameters('cloudgatewayip_name')]",
+            "type": "Microsoft.Network/publicIPAddresses",
+            "apiVersion": "2023-11-01",
+            "location": "[resourceGroup().location]",
+            "tags": {},
+            "properties": {
+                "publicIPAllocationMethod": "Static",
+                "publicIPAddressVersion": "IPv4",
+                "deleteOption": "Delete"
+            },
+            "sku": {
+                "name": "Standard",
+                "tier": "Regional"
+            }
+        },
+        {
+            "name": "[parameters('routerip_name')]",
+            "type": "Microsoft.Network/publicIPAddresses",
+            "apiVersion": "2023-11-01",
+            "location": "[resourceGroup().location]",
+            "tags": {},
+            "properties": {
+                "publicIPAllocationMethod": "Static",
+                "publicIPAddressVersion": "IPv4",
+                "deleteOption": "Delete"
+            },
+            "sku": {
+                "name": "Standard",
+                "tier": "Regional"
+            }
+        },
+        {
+            "name": "[parameters('routerinterface_name')]",
+            "type": "Microsoft.Network/networkInterfaces",
+            "apiVersion": "2023-11-01",
+            "location": "[resourceGroup().location]",
+            "tags": {},
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/virtualNetworks', parameters('onpremisesnetwork_name'))]",
+                "[resourceId('Microsoft.Network/publicIPAddresses', parameters('routerip_name'))]"
+            ],
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "ipconfig",
+                        "properties": {
+                            "privateIPAllocationMethod": "Static",
+                            "privateIPAddress": "[cidrHost(reference(resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('onpremisesnetwork_name'), 'routersubnet'), '2023-11-01').addressPrefix, 3)]",
+                            "subnet": {
+                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('onpremisesnetwork_name'), 'routersubnet')]"
+                            },
+                            "publicIPAddress": {
+                                "id": "[resourceId('Microsoft.Network/publicIPAddresses', parameters('routerip_name'))]"
+                            }
+                        }
+                    }
+                ],
+                "enableIPForwarding": true
+            }
+        },
+        {
+            "type": "Microsoft.Compute/virtualMachines",
+            "apiVersion": "2023-03-01",
+            "name": "[parameters('router_name')]",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/networkInterfaces', parameters('routerinterface_name'))]"
+            ],
+            "properties": {
+                "hardwareProfile": {
+                    "vmSize": "Standard_B2s"
+                },
+                "osProfile": {
+                    "computerName": "[parameters('router_name')]",
+                    "adminUsername": "[parameters('Username')]",
+                    "adminPassword": "[parameters('Password')]",
+                    "linuxConfiguration": {
+                        "disablePasswordAuthentication": false
+                    }    
+                },
+                "storageProfile": {
+                    "imageReference": {
+                        "publisher": "Canonical",
+                        "offer": "0001-com-ubuntu-server-jammy",
+                        "sku": "22_04-lts-gen2",
+                        "version": "latest"
+                    },
+                    "osDisk": {
+                        "osType": "Linux",
+                        "createOption": "FromImage",
+                        "deleteOption": "Delete"
+                    }
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', parameters('routerinterface_name'))]",
+                            "deleteOption": "Delete"
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "name": "[parameters('serverinterface_name')]",
+            "type": "Microsoft.Network/networkInterfaces",
+            "apiVersion": "2023-11-01",
+            "location": "[resourceGroup().location]",
+            "tags": {},
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/virtualNetworks', parameters('onpremisesnetwork_name'))]"
+            ],
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "ipconfig",
+                        "properties": {
+                            "privateIPAllocationMethod": "Static",
+                            "privateIPAddress": "[cidrHost(reference(resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('onpremisesnetwork_name'), 'serversubnet'), '2023-11-01').addressPrefix, 3)]",
+                            "subnet": {
+                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('onpremisesnetwork_name'), 'serversubnet')]"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Compute/virtualMachines",
+            "apiVersion": "2023-03-01",
+            "name": "[parameters('server_name')]",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/networkInterfaces', parameters('serverinterface_name'))]"
+            ],
+            "properties": {
+                "hardwareProfile": {
+                    "vmSize": "Standard_B2s"
+                },
+                "osProfile": {
+                    "computerName": "[parameters('server_name')]",
+                    "adminUsername": "[parameters('Username')]",
+                    "adminPassword": "[parameters('Password')]",
+                    "linuxConfiguration": {
+                        "disablePasswordAuthentication": false
+                    }    
+                },
+                "storageProfile": {
+                    "imageReference": {
+                        "publisher": "Canonical",
+                        "offer": "0001-com-ubuntu-server-jammy",
+                        "sku": "22_04-lts-gen2",
+                        "version": "latest"
+                    },
+                    "osDisk": {
+                        "osType": "Linux",
+                        "createOption": "FromImage",
+                        "deleteOption": "Delete"
+                    }
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', parameters('serverinterface_name'))]",
+                            "deleteOption": "Delete"
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "name": "[parameters('route_name')]",
+            "type": "Microsoft.Network/routeTables",
+            "apiVersion": "2023-11-01",
+            "location": "[resourceGroup().location]",
+            "tags": {},
+            "properties": {
+                "disableBgpRoutePropagation": true
+            }
+        },
+        {
+            "type": "Microsoft.Network/routeTables/routes",
+			"name": "[concat(parameters('route_name'), '/routetocloudnetwork')]",
+            "apiVersion": "2023-11-01",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/routeTables', parameters('route_name'))]",
+                "[resourceId('Microsoft.Network/networkInterfaces', parameters('routerinterface_name'))]"
+            ],
+            "properties": {
+                "addressPrefix": "[reference(resourceId('Microsoft.Network/virtualNetworks', parameters('cloudnetwork_name')), '2023-11-01').addressSpace.addressPrefixes[0]]",
+                "nextHopType": "VirtualAppliance",
+                "nextHopIpAddress": "[reference(resourceId('Microsoft.Network/networkInterfaces', parameters('routerinterface_name')), '2023-11-01').ipConfigurations[0].properties.privateIPAddress]"
+            }
+        },
+        {
+            "name": "[parameters('securitygrp_name')]",
+            "type": "Microsoft.Network/networkSecurityGroups",
+            "apiVersion": "2023-11-01",
+            "location": "[resourceGroup().location]",
+            "tags": {},
+            "dependsOn": []
+        },
+        {
+            "name": "[concat(parameters('securitygrp_name'), '/AllowSSHInBound')]",
+            "type": "Microsoft.Network/networkSecurityGroups/securityRules",
+            "apiVersion": "2023-11-01",
+			"dependsOn": [
+				"[resourceId('Microsoft.Network/networkSecurityGroups', parameters('securitygrp_name'))]",
+                "[resourceId('Microsoft.Network/networkInterfaces', parameters('routerinterface_name'))]"
+            ],
+            "properties": {
+                "protocol": "*",
+                "sourcePortRange": "*",
+                "destinationPortRange": "22",
+                "sourceAddressPrefix": "Internet",
+                "destinationAddressPrefix": "[reference(resourceId('Microsoft.Network/networkInterfaces', parameters('routerinterface_name')), '2023-11-01').ipConfigurations[0].properties.privateIPAddress]",
+                "access": "Allow",
+                "priority": 100,
+                "direction": "Inbound"
+            }
+        },
+        {
+            "name": "[concat(parameters('securitygrp_name'), '/AllowDataInBound')]",
+            "type": "Microsoft.Network/networkSecurityGroups/securityRules",
+            "apiVersion": "2023-11-01",
+			"dependsOn": [
+				"[resourceId('Microsoft.Network/networkSecurityGroups/securityRules', parameters('securitygrp_name'), 'AllowSSHInBound')]"
+            ],
+            "properties": {
+                "protocol": "*",
+                "sourcePortRange": "*",
+                "destinationPortRange": "*",
+                "sourceAddressPrefix": "[reference(resourceId('Microsoft.Network/virtualNetworks', parameters('onpremisesnetwork_name')), '2023-11-01').addressSpace.addressPrefixes[0]]",
+                "destinationAddressPrefix": "[reference(resourceId('Microsoft.Network/virtualNetworks', parameters('cloudnetwork_name')), '2023-11-01').addressSpace.addressPrefixes[0]]",
+                "access": "Allow",
+                "priority": 200,
+                "direction": "Inbound"
+            }
+        },
+        {
+            "name": "[concat(parameters('securitygrp_name'), '/AllowDataOutBound')]",
+            "type": "Microsoft.Network/networkSecurityGroups/securityRules",
+            "apiVersion": "2023-11-01",
+			"dependsOn": [
+				"[resourceId('Microsoft.Network/networkSecurityGroups/securityRules', parameters('securitygrp_name'), 'AllowDataInBound')]"
+            ],
+            "properties": {
+                "protocol": "*",
+                "sourcePortRange": "*",
+                "destinationPortRange": "*",
+                "sourceAddressPrefix": "[reference(resourceId('Microsoft.Network/virtualNetworks', parameters('cloudnetwork_name')), '2023-11-01').addressSpace.addressPrefixes[0]]",
+                "destinationAddressPrefix": "[reference(resourceId('Microsoft.Network/virtualNetworks', parameters('onpremisesnetwork_name')), '2023-11-01').addressSpace.addressPrefixes[0]]",
+                "access": "Allow",
+                "priority": 200,
+                "direction": "Outbound"
+            }
+        },
+        {
+            "name": "[concat(parameters('securitygrp_name'), '/AllowVPNInBound')]",
+            "type": "Microsoft.Network/networkSecurityGroups/securityRules",
+            "apiVersion": "2023-11-01",
+			"dependsOn": [
+				"[resourceId('Microsoft.Network/networkSecurityGroups/securityRules', parameters('securitygrp_name'), 'AllowDataOutBound')]"
+            ],
+            "properties": {
+                "protocol": "UDP",
+                "sourcePortRange": "*",
+                "destinationPortRanges": [
+                    "500",
+                    "4500"
+                ],
+                "sourceAddressPrefix": "[reference(resourceId('Microsoft.Network/publicIPAddresses', parameters('cloudgatewayip_name')), '2023-11-01').ipAddress]",
+                "destinationAddressPrefix": "[reference(resourceId('Microsoft.Network/networkInterfaces', parameters('routerinterface_name')), '2023-11-01').ipConfigurations[0].properties.privateIPAddress]",
+                "access": "Allow",
+                "priority": 500,
+                "direction": "Inbound"
+            }
+        },
+        {
+            "name": "[concat(parameters('securitygrp_name'), '/AllowVPNOutBound')]",
+            "type": "Microsoft.Network/networkSecurityGroups/securityRules",
+            "apiVersion": "2023-11-01",
+			"dependsOn": [
+				"[resourceId('Microsoft.Network/networkSecurityGroups/securityRules', parameters('securitygrp_name'), 'AllowVPNInBound')]"
+            ],
+            "properties": {
+                "protocol": "UDP",
+                "sourcePortRange": "*",
+                "destinationPortRanges": [
+                    "500",
+                    "4500"
+                ],
+                "sourceAddressPrefix": "[reference(resourceId('Microsoft.Network/networkInterfaces', parameters('routerinterface_name')), '2023-11-01').ipConfigurations[0].properties.privateIPAddress]",
+                "destinationAddressPrefix": "[reference(resourceId('Microsoft.Network/publicIPAddresses', parameters('cloudgatewayip_name')), '2023-11-01').ipAddress]",
+                "access": "Allow",
+                "priority": 500,
+                "direction": "Outbound"
+            }
+        },
+        {
+            "name": "[parameters('cloudnic_name')]",
+            "type": "Microsoft.Network/networkInterfaces",
+            "apiVersion": "2023-11-01",
+            "location": "[resourceGroup().location]",
+            "tags": {},
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/virtualNetworks', parameters('cloudnetwork_name'))]"
+            ],
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "ipconfig",
+                        "properties": {
+                            "privateIPAllocationMethod": "Static",
+                            "privateIPAddress": "[cidrHost(reference(resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('cloudnetwork_name'), 'AzureVMSubnet'), '2023-11-01').addressPrefix, 3)]",
+                            "subnet": {
+                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('cloudnetwork_name'), 'AzureVMSubnet')]"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Compute/virtualMachines",
+            "apiVersion": "2023-03-01",
+            "name": "[parameters('cloudinstance_name')]",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/networkInterfaces', parameters('cloudnic_name'))]"
+            ],
+            "properties": {
+                "hardwareProfile": {
+                    "vmSize": "Standard_B2s"
+                },
+                "osProfile": {
+                    "computerName": "[parameters('cloudinstance_name')]",
+                    "adminUsername": "[parameters('Username')]",
+                    "adminPassword": "[parameters('Password')]",
+                    "linuxConfiguration": {
+                        "disablePasswordAuthentication": false
+                    }    
+                },
+                "storageProfile": {
+                    "imageReference": {
+                        "publisher": "Canonical",
+                        "offer": "0001-com-ubuntu-server-jammy",
+                        "sku": "22_04-lts-gen2",
+                        "version": "latest"
+                    },
+                    "osDisk": {
+                        "name": "routerdisk",
+                        "osType": "Linux",
+                        "createOption": "FromImage",
+                        "deleteOption": "Delete"
+                    }
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', parameters('cloudnic_name'))]",
+                            "deleteOption": "Delete"
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "name": "[parameters('cloudgateway_name')]",
+            "type": "Microsoft.Network/virtualNetworkGateways",
+            "apiVersion": "2023-11-01",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/publicIPAddresses', parameters('cloudgatewayip_name'))]",
+                "[resourceId('Microsoft.Network/virtualNetworks', parameters('cloudnetwork_name'))]"
+            ],
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "cloudgatewayipconfig",
+                        "properties": {
+                            "privateIPAllocationMethod": "Dynamic",
+                            "subnet": {
+                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('cloudnetwork_name'), 'GatewaySubnet')]"
+                            },
+                            "publicIPAddress": {
+                                "id": "[resourceId('Microsoft.Network/publicIPAddresses', parameters('cloudgatewayip_name'))]"
+                            }
+                        }
+                    }
+                ],
+                "sku": {
+                    "name": "VpnGw1",
+                    "tier": "VpnGw1"
+                },
+                "gatewayType": "Vpn",
+                "vpnType": "RouteBased",
+                "enableBgp": true
+            }
+        },
+        {
+            "name": "[parameters('localgateway_name')]",
+            "type": "Microsoft.Network/localNetworkGateways",
+            "apiVersion": "2023-11-01",
+            "location": "[resourceGroup().location]",
+            "tags": {},
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/publicIPAddresses', parameters('routerip_name'))]"
+            ],
+            "properties": {
+                "gatewayIpAddress": "[reference(resourceId('Microsoft.Network/publicIPAddresses', parameters('routerip_name')), '2023-11-01').ipAddress]",
+                "bgpSettings": {
+                    "asn": 65514,
+                    "bgpPeeringAddress": "[reference(resourceId('Microsoft.Network/networkInterfaces', parameters('routerinterface_name')), '2023-11-01').ipConfigurations[0].properties.privateIPAddress]"
+                }
+            }
+        },
+        {
+            "name": "[parameters('cloudvpn_name')]",
+            "type": "Microsoft.Network/connections",
+            "apiVersion": "2023-11-01",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/virtualNetworkGateways', parameters('cloudgateway_name'))]",
+                "[resourceId('Microsoft.Network/localNetworkGateways', parameters('localgateway_name'))]"
+            ],
+            "properties": {
+                "virtualNetworkGateway1": {
+                    "id": "[resourceId('Microsoft.Network/virtualNetworkGateways', parameters('cloudgateway_name'))]",
+                    "properties": {}
+                },
+                "localNetworkGateway2": {
+                    "id": "[resourceId('Microsoft.Network/localNetworkGateways', parameters('localgateway_name'))]",
+                    "properties": {}
+                },
+                "connectionType": "IPsec",
+                "routingWeight": 0,
+                "sharedKey": "[parameters('presharedkey')]",
+                "enableBgp": true
+            }
+        }
+    ],
+    "outputs": {}
+}

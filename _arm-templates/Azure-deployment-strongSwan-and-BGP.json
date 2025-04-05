@@ -1,0 +1,578 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "Username": {
+            "type": "string",
+            "metadata": {
+                "description": "Username for the VMs"
+            }
+        },
+        "Password": {
+            "type": "secureString",
+            "metadata": {
+                "description": "Password for the VMs"
+            }
+        },
+        "PreSharedKey": {
+            "type": "secureString",
+            "metadata": {
+                "description": "Pre-shared key for the VPN connections"
+            }
+        }
+    },
+    "functions": [],
+    "variables": {},
+    "resources": [
+        {
+            "name": "VNetHub",
+            "type": "Microsoft.Network/virtualNetworks",
+            "apiVersion": "2023-11-01",
+            "location": "[resourceGroup().location]",
+            "tags": {},
+            "properties": {
+                "addressSpace": {
+                    "addressPrefixes": [
+                        "[cidrSubnet('10.0.0.0', 24, 0)]"
+                    ]
+                },
+                "subnets": [
+                    {
+                        "name": "EdgeRouterSubnet",
+                        "properties": {
+                            "addressPrefix": "[cidrSubnet('10.0.0.0', 27, 0)]"
+                        }
+                    },
+                    {
+                        "name": "RouteServerSubnet",
+                        "properties": {
+                            "addressPrefix": "[cidrSubnet('10.0.0.0/24', 27, 1)]"
+                        }
+                    },
+                    {
+                        "name": "AzureBastionSubnet",
+                        "properties": {
+                            "addressPrefix": "[cidrSubnet('10.0.0.0/24', 26, 1)]"
+                        }
+                    },
+                    {
+                        "name": "HubServerSubnet",
+                        "properties": {
+                            "addressPrefix": "[cidrSubnet('10.0.0.0/24', 25, 1)]"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "EdgeRouterIP",
+            "type": "Microsoft.Network/publicIPAddresses",
+            "apiVersion": "2023-11-01",
+            "location": "[resourceGroup().location]",
+            "tags": {},
+            "properties": {
+                "publicIPAllocationMethod": "Static",
+                "publicIPAddressVersion": "IPv4",
+                "deleteOption": "Delete"
+            },
+            "sku": {
+                "name": "Standard",
+                "tier": "Regional"
+            }
+        },
+        {
+            "name": "RouteServerIP",
+            "type": "Microsoft.Network/publicIPAddresses",
+            "apiVersion": "2023-11-01",
+            "location": "[resourceGroup().location]",
+            "tags": {},
+            "properties": {
+                "publicIPAllocationMethod": "Static",
+                "publicIPAddressVersion": "IPv4",
+                "deleteOption": "Delete"
+            },
+            "sku": {
+                "name": "Standard",
+                "tier": "Regional"
+            }
+        },
+        {
+            "name": "BastionIP",
+            "type": "Microsoft.Network/publicIPAddresses",
+            "apiVersion": "2023-11-01",
+            "location": "[resourceGroup().location]",
+            "tags": {},
+            "properties": {
+                "publicIPAllocationMethod": "Static",
+                "publicIPAddressVersion": "IPv4"
+            },
+            "sku": {
+                "name": "Standard",
+                "tier": "Regional"
+            }
+        },
+        {
+            "name": "EdgeRouterInterface",
+            "type": "Microsoft.Network/networkInterfaces",
+            "apiVersion": "2023-11-01",
+            "location": "[resourceGroup().location]",
+            "tags": {},
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/virtualNetworks', 'VNetHub')]"
+            ],
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "ipconfig",
+                        "properties": {
+                            "privateIPAllocationMethod": "Static",
+                            "privateIPAddress": "[cidrHost(reference(resourceId('Microsoft.Network/virtualNetworks/subnets', 'VNetHub', 'EdgeRouterSubnet'), '2023-11-01').addressPrefix, 3)]",
+                            "subnet": {
+                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', 'VNetHub', 'EdgeRouterSubnet')]"
+                            },
+                            "publicIPAddress": {
+                                "id": "[resourceId('Microsoft.Network/publicIPAddresses', 'EdgeRouterIP')]"
+                            }
+                        }
+                    }
+                ],
+                "enableIPForwarding": true
+            }
+        },
+        {
+            "name": "HubServerInterface",
+            "type": "Microsoft.Network/networkInterfaces",
+            "apiVersion": "2023-11-01",
+            "location": "[resourceGroup().location]",
+            "tags": {},
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/virtualNetworks', 'VNetHub')]"
+            ],
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "ipconfig",
+                        "properties": {
+                            "privateIPAllocationMethod": "Static",
+                            "privateIPAddress": "[cidrHost(reference(resourceId('Microsoft.Network/virtualNetworks/subnets', 'VNetHub', 'HubServerSubnet'), '2023-11-01').addressPrefix, 3)]",
+                            "subnet": {
+                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', 'VNetHub', 'HubServerSubnet')]"
+                            }
+                        }
+                    }
+                ],
+                "enableAcceleratedNetworking": false
+            }
+        },
+        {
+            "type": "Microsoft.Compute/virtualMachines",
+            "apiVersion": "2023-03-01",
+            "name": "EdgeRouter",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/networkInterfaces', 'EdgeRouterInterface')]"
+            ],
+            "properties": {
+                "hardwareProfile": {
+                    "vmSize": "Standard_B2s"
+                },
+                "osProfile": {
+                    "computerName": "EdgeRouter",
+                    "adminUsername": "[parameters('Username')]",
+                    "adminPassword": "[parameters('Password')]",
+                    "linuxConfiguration": {
+                        "disablePasswordAuthentication": false
+                    }
+                },
+                "storageProfile": {
+                    "imageReference": {
+                        "publisher": "Canonical",
+                        "offer": "0001-com-ubuntu-server-jammy",
+                        "sku": "22_04-lts-gen2",
+                        "version": "latest"
+                    },
+                    "osDisk": {
+                        "createOption": "fromImage",
+                        "caching": "ReadWrite",
+                        "managedDisk": {
+                            "storageAccountType": "Standard_LRS"
+                        },
+                        "osType": "Linux",
+                        "name": "EdgeRouterOSDisk",
+                        "deleteOption": "Delete"
+                    }
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', 'EdgeRouterInterface')]",
+                            "deleteOption": "Delete"
+                        }
+                    ]
+                },
+                "diagnosticsProfile": {
+                    "bootDiagnostics": {
+                        "enabled": false
+                    }
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Compute/virtualMachines",
+            "apiVersion": "2023-03-01",
+            "name": "HubServer",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/networkInterfaces', 'HubServerInterface')]"
+            ],
+            "properties": {
+                "hardwareProfile": {
+                    "vmSize": "Standard_B2s"
+                },
+                "osProfile": {
+                    "computerName": "HubServer",
+                    "adminUsername": "[parameters('Username')]",
+                    "adminPassword": "[parameters('Password')]",
+                    "linuxConfiguration": {
+                        "disablePasswordAuthentication": false
+                    }
+                },
+                "storageProfile": {
+                    "imageReference": {
+                        "publisher": "Canonical",
+                        "offer": "0001-com-ubuntu-server-jammy",
+                        "sku": "22_04-lts-gen2",
+                        "version": "latest"
+                    },
+                    "osDisk": {
+                        "createOption": "fromImage",
+                        "caching": "ReadWrite",
+                        "managedDisk": {
+                            "storageAccountType": "Standard_LRS"
+                        },
+                        "osType": "Linux",
+                        "name": "HubServerOSDisk",
+                        "deleteOption": "Delete"
+                    }
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', 'HubServerInterface')]",
+                            "deleteOption": "Delete"
+                        }
+                    ]
+                },
+                "diagnosticsProfile": {
+                    "bootDiagnostics": {
+                        "enabled": false
+                    }
+                }
+            }
+        },
+        {
+            "name": "HubBastion",
+            "type": "Microsoft.Network/BastionHosts",
+            "apiVersion": "2023-11-01",
+            "location": "[resourceGroup().location]",
+            "tags": {},
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/virtualNetworks', 'VNetHub')]",
+                "[resourceId('Microsoft.Network/publicIPAddresses', 'BastionIP')]"
+            ],
+            "sku": {
+                "name": "Standard"
+            },
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "ipconfig",
+                        "properties": {
+                            "privateIPAllocationMethod": "Dynamic",
+                            "subnet": {
+                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', 'VNetHub', 'AzureBastionSubnet')]"
+                            },
+                            "publicIPAddress": {
+                                "id": "[resourceId('Microsoft.Network/publicIPAddresses', 'BastionIP')]"
+                            }
+                        }
+                    }
+                ],
+                "disableCopyPaste": false,
+                "enableIpConnect": true,
+                "enableFileCopy": true,
+                "enableTunneling": true
+            }
+        },
+        {
+            "type": "Microsoft.Network/virtualHubs",
+            "apiVersion": "2023-11-01",
+            "name": "HubRouteServer",
+            "location": "[resourceGroup().location]",
+            "tags": {},
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/virtualNetworks', 'VNetHub')]",
+                "[resourceId('Microsoft.Network/publicIPAddresses', 'RouteServerIP')]"
+            ],
+            "properties": {
+                "sku": "Standard"
+            }
+        },
+        {
+            "type": "Microsoft.Network/virtualHubs/ipConfigurations",
+            "apiVersion": "2023-11-01",
+            "name": "HubRouteServer/ipconfig",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/virtualHubs', 'HubRouteServer')]"
+            ],
+            "properties": {
+                "subnet": {
+                    "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', 'VNetHub', 'RouteServerSubnet')]"
+                },
+                "publicIPAddress": {
+                    "id": "[resourceId('Microsoft.Network/publicIPAddresses', 'RouteServerIP')]"
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Network/virtualHubs/bgpConnections",
+            "apiVersion": "2023-11-01",
+            "name": "HubRouteServer/BGPConnectiontoEdgeRouter",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/virtualHubs/ipConfigurations', 'HubRouteServer', 'ipconfig')]"
+            ],
+            "properties": {
+                "peerAsn": 65523,
+                "peerIp": "[reference(resourceId('Microsoft.Network/networkInterfaces', 'EdgeRouterInterface'), '2023-11-01').ipConfigurations[0].properties.privateIPAddress]"
+            }
+        },
+        {
+            "copy": {
+                "name": "virtualNetworkLoop",
+                "count": 2
+            },
+            "name": "[format('VNetSpoke{0}', copyIndex(1))]",
+            "type": "Microsoft.Network/virtualNetworks",
+            "apiVersion": "2023-11-01",
+            "location": "[resourceGroup().location]",
+            "tags": {},
+            "properties": {
+                "addressSpace": {
+                    "addressPrefixes": [
+                        "[cidrSubnet(concat('10.0.', format('{0}', copyIndex(1)), '.0/24'), 24, 0)]"
+                    ]
+                },
+                "subnets": [
+                    {
+                        "name": "GatewaySubnet",
+                        "properties": {
+                            "addressPrefix": "[cidrSubnet(concat('10.0.', format('{0}', copyIndex(1)), '.0/24'), 27, 0)]"
+                        }
+                    },
+                    {
+                        "name": "[format('SpokeSubnet{0}', copyIndex(1))]",
+                        "properties": {
+                            "addressPrefix": "[cidrSubnet(concat('10.0.', format('{0}', copyIndex(1)), '.0/24'), 29, 4)]"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "copy": {
+                "name": "networkInterfaceLoop",
+                "count": 2
+            },
+            "name": "[format('SpokeInterface{0}', copyIndex(1))]",
+            "type": "Microsoft.Network/networkInterfaces",
+            "apiVersion": "2023-11-01",
+            "location": "[resourceGroup().location]",
+            "tags": {},
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/virtualNetworks', format('VNetSpoke{0}', copyIndex(1)))]"
+            ],
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "ipconfig",
+                        "properties": {
+                            "privateIPAllocationMethod": "Static",
+                            "privateIPAddress": "[cidrHost(reference(resourceId('Microsoft.Network/virtualNetworks/subnets', format('VNetSpoke{0}', copyIndex(1)), format('SpokeSubnet{0}', copyIndex(1))), '2023-11-01').addressPrefix, 3)]",
+                            "subnet": {
+                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', format('VNetSpoke{0}', copyIndex(1)), format('SpokeSubnet{0}', copyIndex(1)))]"
+                            }
+                        }
+                    }
+                ],
+                "enableAcceleratedNetworking": false
+            }
+        },
+        {
+            "copy": {
+                "name": "virtualMachineLoop",
+                "count": 2
+            },
+            "type": "Microsoft.Compute/virtualMachines",
+            "apiVersion": "2023-03-01",
+            "name": "[format('SpokeServer{0}', copyIndex(1))]",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/networkInterfaces', format('SpokeInterface{0}', copyIndex(1)))]"
+            ],
+            "properties": {
+                "hardwareProfile": {
+                    "vmSize": "Standard_B2s"
+                },
+                "osProfile": {
+                    "computerName": "[format('SpokeServer{0}', copyIndex(1))]",
+                    "adminUsername": "[parameters('Username')]",
+                    "adminPassword": "[parameters('Password')]",
+                    "linuxConfiguration": {
+                        "disablePasswordAuthentication": false
+                    }
+                },
+                "storageProfile": {
+                    "imageReference": {
+                        "publisher": "Canonical",
+                        "offer": "0001-com-ubuntu-server-jammy",
+                        "sku": "22_04-lts-gen2",
+                        "version": "latest"
+                    },
+                    "osDisk": {
+                        "createOption": "fromImage",
+                        "caching": "ReadWrite",
+                        "managedDisk": {
+                            "storageAccountType": "Standard_LRS"
+                        },
+                        "osType": "Linux",
+                        "name": "[format('SpokeServer{0}', copyIndex(1), 'OSDisk')]",
+                        "deleteOption": "Delete"
+                    }
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', format('SpokeInterface{0}', copyIndex(1)))]",
+                            "deleteOption": "Delete"
+                        }
+                    ]
+                },
+                "diagnosticsProfile": {
+                    "bootDiagnostics": {
+                        "enabled": false
+                    }
+                }
+            }
+        },
+        {
+            "copy": {
+                "name": "publicIPAddressLoop",
+                "count": 2
+            },
+            "name": "[format('GatewayIP{0}', copyIndex(1))]",
+            "type": "Microsoft.Network/publicIPAddresses",
+            "apiVersion": "2023-11-01",
+            "location": "[resourceGroup().location]",
+            "tags": {},
+            "properties": {
+                "publicIPAllocationMethod": "Static",
+                "publicIPAddressVersion": "IPv4"
+            },
+            "sku": {
+                "name": "Standard",
+                "tier": "Regional"
+            }
+        },
+        {
+            "copy": {
+                "name": "virtualNetworkGatewayLoop",
+                "count": 2
+            },
+            "name": "[format('VNetGateway{0}', copyIndex(1))]",
+            "type": "Microsoft.Network/virtualNetworkGateways",
+            "apiVersion": "2023-11-01",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/publicIPAddresses', format('GatewayIP{0}', copyIndex(1)))]",
+                "[resourceId('Microsoft.Network/virtualNetworks', format('VNetSpoke{0}', copyIndex(1)))]"
+            ],
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "vnetGatewayConfig",
+                        "properties": {
+                            "privateIPAllocationMethod": "Dynamic",
+                            "subnet": {
+                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', format('VNetSpoke{0}', copyIndex(1)), 'GatewaySubnet')]"
+                            },
+                            "publicIPAddress": {
+                                "id": "[resourceId('Microsoft.Network/publicIPAddresses', format('GatewayIP{0}', copyIndex(1)))]"
+                            }
+                        }
+                    }
+                ],
+                "sku": {
+                    "name": "VpnGw1",
+                    "tier": "VpnGw1"
+                },
+                "gatewayType": "Vpn",
+                "vpnType": "RouteBased",
+                "enableBgp": true,
+                "bgpSettings": {
+                    "asn": "[concat('6552', copyIndex(1))]"
+                }
+            }
+        },
+        {
+            "copy": {
+                "name": "localNetworkGatewayLoop",
+                "count": 2
+            },
+            "name": "[format('RemoteGateway{0}', copyIndex(1))]",
+            "type": "Microsoft.Network/localNetworkGateways",
+            "apiVersion": "2023-11-01",
+            "location": "[resourceGroup().location]",
+            "properties": {
+                "localNetworkAddressSpace": {
+                    "addressPrefixes": [
+                        "[reference(resourceId('Microsoft.Network/virtualNetworks', 'VNetHub'), '2023-11-01').addressSpace.addressPrefixes[0]]"
+                    ]
+                },
+                "gatewayIpAddress": "[reference(resourceId('Microsoft.Network/publicIPAddresses', 'EdgeRouterIP'), '2023-11-01').ipAddress]",
+                "bgpSettings": {
+                    "asn": 65523,
+                    "bgpPeeringAddress": "[reference(resourceId('Microsoft.Network/networkInterfaces', 'EdgeRouterInterface'), '2023-11-01').ipConfigurations[0].properties.privateIPAddress]"
+                }
+            }
+        },
+        {
+            "copy": {
+                "name": "vpnVnetConnectionLoop",
+                "count": 2
+            },
+            "name": "[format('VPNConnection{0}', copyIndex(1))]",
+            "type": "Microsoft.Network/connections",
+            "apiVersion": "2023-11-01",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/virtualNetworkGateways', format('VNetGateway{0}', copyIndex(1)))]",
+                "[resourceId('Microsoft.Network/localNetworkGateways', format('RemoteGateway{0}', copyIndex(1)))]"
+            ],
+            "properties": {
+                "virtualNetworkGateway1": {
+                    "id": "[resourceId('Microsoft.Network/virtualNetworkGateways', format('VNetGateway{0}', copyIndex(1)))]",
+                    "properties": {}
+                },
+                "localNetworkGateway2": {
+                    "id": "[resourceId('Microsoft.Network/localNetworkGateways', format('RemoteGateway{0}', copyIndex(1)))]",
+                    "properties": {}
+                },
+                "connectionType": "IPsec",
+                "routingWeight": 0,
+                "enableBgp": true,
+                "sharedKey": "[parameters('PreSharedKey')]"
+            }
+        }
+    ],
+    "outputs": {}
+}

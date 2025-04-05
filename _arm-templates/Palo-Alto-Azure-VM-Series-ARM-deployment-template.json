@@ -1,0 +1,483 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "region_name": {
+            "defaultValue": "eastus",
+            "type": "String"
+        },
+        "vnet_name": {
+            "defaultValue": "test-vnet",
+            "type": "String",
+            "metadata": {
+                "description": "Name of the Virtual Network."
+            }
+        },
+        "vnet_address_prefix": {
+            "defaultValue": "192.168.0.0/24",
+            "type": "String",
+            "metadata": {
+                "description": "Address Prefix of the Virtual Network."
+            }
+        },
+        "mgmt_subnet_address": {
+            "defaultValue": "192.168.0.0/27",
+            "type": "String",
+            "metadata": {
+                "description": "Address prefix of the management subnet."
+            }
+        },
+        "untrust_subnet_address": {
+            "defaultValue": "192.168.0.32/27",
+            "type": "String",
+            "metadata": {
+                "description": "Address prefix of the untrust subnet."
+            }
+        },
+        "trust_subnet_address": {
+            "defaultValue": "192.168.0.64/27",
+            "type": "String",
+            "metadata": {
+                "description": "Address prefix of the trust subnet."
+            }
+        },
+        "vm_subnet_address": {
+            "defaultValue": "192.168.0.96/27",
+            "type": "String",
+            "metadata": {
+                "description": "Address prefix of the VM subnet."
+            }
+        },
+        "bastion_subnet_address": {
+            "defaultValue": "192.168.0.128/25",
+            "type": "String",
+            "metadata": {
+                "description": "Address prefix of AzureBastionSubnet."
+            }
+        },
+        "nsg_name": {
+            "defaultValue": "test-nsg",
+            "type": "String",
+            "metadata": {
+                "description": "Name of the NSG."
+            }
+        },
+        "fw_name": {
+            "defaultValue": "test-fw",
+            "type": "String",
+            "metadata": {
+                "description": "Name of the Palo Alto NVA."
+            }
+        },
+        "vm_name": {
+            "defaultValue": "test-vm",
+            "type": "String",
+            "metadata": {
+                "description": "Name of the Virtual Machine."
+            }
+        },
+        "username": {
+            "type": "String",
+            "metadata": {
+                "description": "This is the username of the VM."
+            }
+        },
+        "password": {
+            "type": "secureString",
+            "metadata": {
+                "description": "This is the password of the VM."
+            }
+        },
+        "bastion_name": {
+            "defaultValue": "test-bastion",
+            "type": "String",
+            "metadata": {
+                "description": "Name of the Azure Bastion."
+            }
+        }
+    },
+    "variables": {},
+    "functions": [],
+    "resources": [
+        {
+            "type": "Microsoft.Network/virtualNetworks",
+            "apiVersion": "2023-04-01",
+            "name": "[parameters('vnet_name')]",
+            "location": "[parameters('region_name')]",
+            "tags": {},
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('nsg_name'))]"
+            ],
+            "properties": {
+                "addressSpace": {
+                    "addressPrefixes": [
+                        "[parameters('vnet_address_prefix')]"
+                    ]
+                },
+                "subnets": [
+                    {
+                        "name": "mgmt-subnet",
+                        "properties": {
+                            "addressPrefix": "[parameters('mgmt_subnet_address')]",
+                            "networkSecurityGroup": {
+                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('nsg_name'))]"
+                            }
+                        }
+                    },
+                    {
+                        "name": "untrust-subnet",
+                        "properties": {
+                            "addressPrefix": "[parameters('untrust_subnet_address')]"
+                        }
+                    },
+                    {
+                        "name": "trust-subnet",
+                        "properties": {
+                            "addressPrefix": "[parameters('trust_subnet_address')]"
+                        }
+                    },
+                    {
+                        "name": "vm-subnet",
+                        "properties": {
+                            "addressPrefix": "[parameters('vm_subnet_address')]"
+                        }
+                    },
+                    {
+                        "name": "AzureBastionSubnet",
+                        "properties": {
+                            "addressPrefix": "[parameters('bastion_subnet_address')]"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Network/networkSecurityGroups",
+            "apiVersion": "2023-04-01",
+            "name": "[parameters('nsg_name')]",
+            "location": "[parameters('region_name')]",
+            "properties": {
+                "securityRules": [
+                    {
+                        "name": "ssh",
+                        "properties": {
+                            "description": "Allow Inbound SSH Traffic.",
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "22",
+                            "sourceAddressPrefix": "*",
+                            "destinationAddressPrefix": "*",
+                            "access": "Allow",
+                            "priority": 200,
+                            "direction": "Inbound"
+                        }
+                    },
+                    {
+                        "name": "web",
+                        "properties": {
+                            "description": "Allow Inbound HTTP/HTTPS Traffic.",
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "destinationPortRanges": [
+                                "80",
+                                "443"
+                            ],
+                            "sourceAddressPrefix": "*",
+                            "destinationAddressPrefix": "*",
+                            "access": "Allow",
+                            "priority": 800,
+                            "direction": "Inbound"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Network/publicIPAddresses",
+            "apiVersion": "2023-04-01",
+            "name": "test-mgmt-ip",
+            "location": "[parameters('region_name')]",
+            "tags": {},
+            "sku": {
+                "name": "Standard",
+                "tier": "Regional"
+            },
+            "properties": {
+                "publicIPAllocationMethod": "Static"
+            }
+        },
+        {
+            "type": "Microsoft.Network/publicIPAddresses",
+            "apiVersion": "2023-04-01",
+            "name": "test-public-ip",
+            "location": "[parameters('region_name')]",
+            "tags": {},
+            "sku": {
+                "name": "Standard",
+                "tier": "Regional"
+            },
+            "properties": {
+                "publicIPAllocationMethod": "Static"
+            }
+        },
+        {
+            "type": "Microsoft.Network/networkInterfaces",
+            "apiVersion": "2023-04-01",
+            "name": "test-mgmt-nic",
+            "location": "[parameters('region_name')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/virtualNetworks', parameters('vnet_name'))]",
+                "[resourceId('Microsoft.Network/publicIPAddresses', 'test-mgmt-ip')]"
+            ],
+            "tags": {},
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "ipconfig",
+                        "properties": {
+                            "privateIPAllocationMethod": "Static",
+                            "privateIPAddress": "192.168.0.4",
+                            "subnet": {
+                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vnet_name'), 'mgmt-subnet')]"
+                            },
+                            "publicIpAddress": {
+                                "id": "[resourceId('Microsoft.Network/publicIPAddresses', 'test-mgmt-ip')]"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Network/networkInterfaces",
+            "apiVersion": "2023-04-01",
+            "name": "test-untrust-nic",
+            "location": "[parameters('region_name')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/virtualNetworks', parameters('vnet_name'))]",
+                "[resourceId('Microsoft.Network/publicIPAddresses', 'test-public-ip')]"
+            ],
+            "tags": {},
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "ipconfig",
+                        "properties": {
+                            "privateIPAllocationMethod": "Static",
+                            "privateIPAddress": "192.168.0.36",
+                            "subnet": {
+                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vnet_name'), 'untrust-subnet')]"
+                            },
+                            "publicIpAddress": {
+                                "id": "[resourceId('Microsoft.Network/publicIPAddresses', 'test-public-ip')]"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Network/networkInterfaces",
+            "apiVersion": "2023-04-01",
+            "name": "test-trust-nic",
+            "location": "[parameters('region_name')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/virtualNetworks', parameters('vnet_name'))]"
+            ],
+            "tags": {},
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "ipconfig",
+                        "properties": {
+                            "privateIPAllocationMethod": "Static",
+                            "privateIPAddress": "192.168.0.68",
+                            "subnet": {
+                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vnet_name'), 'trust-subnet')]"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Compute/virtualMachines",
+            "apiVersion": "2023-03-01",
+            "name": "[parameters('fw_name')]",
+            "location": "[parameters('region_name')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/networkInterfaces', 'test-mgmt-nic')]",
+                "[resourceId('Microsoft.Network/networkInterfaces', 'test-untrust-nic')]",
+                "[resourceId('Microsoft.Network/networkInterfaces', 'test-trust-nic')]",
+                "[resourceId('Microsoft.Network/virtualNetworks', parameters('vnet_name'))]"
+            ],
+            "plan": {
+                "name": "byol",
+                "product": "vmseries-flex",
+                "publisher": "paloaltonetworks"
+            },
+            "properties": {
+                "hardwareProfile": {
+                    "vmSize": "Standard_DS3_v2"
+                },
+                "storageProfile": {
+					"imageReference": {
+                    	"publisher": "paloaltonetworks",
+                    	"offer": "vmseries-flex",
+                    	"sku": "byol",
+                    	"version": "latest"
+					}
+                },
+                "osProfile": {
+                    "computerName": "[parameters('fw_name')]",
+                    "adminUsername": "[parameters('username')]",
+                    "adminPassword": "[parameters('password')]"
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', 'test-mgmt-nic')]",
+                            "properties": {
+                                "primary": true
+                            }
+                        },
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', 'test-untrust-nic')]",
+                            "properties": {
+                                "primary": false
+                            }
+                        },
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', 'test-trust-nic')]",
+                            "properties": {
+                                "primary": false
+                            }
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Network/networkInterfaces",
+            "apiVersion": "2023-04-01",
+            "name": "test-vm-nic",
+            "location": "[parameters('region_name')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/virtualNetworks', parameters('vnet_name'))]"
+            ],
+            "tags": {},
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "ipconfig",
+                        "properties": {
+                            "privateIPAllocationMethod": "Static",
+                            "privateIPAddress": "192.168.0.100",
+                            "subnet": {
+                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vnet_name'), 'vm-subnet')]"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Compute/virtualMachines",
+            "apiVersion": "2023-03-01",
+            "name": "[parameters('vm_name')]",
+            "location": "[parameters('region_name')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/networkInterfaces', 'test-vm-nic')]"
+            ],
+            "tags": {},
+            "properties": {
+                "hardwareProfile": {
+                    "vmSize": "Standard_B2s"
+                },
+                "osProfile": {
+                    "computerName": "[parameters('vm_name')]",
+                    "adminUsername": "[parameters('username')]",
+                    "adminPassword": "[parameters('password')]",
+                    "linuxConfiguration": {
+                        "disablePasswordAuthentication": false
+                    }
+                },
+                "storageProfile": {
+                    "imageReference": {
+                        "publisher": "canonical",
+                        "offer": "0001-com-ubuntu-minimal-jammy",
+                        "sku": "minimal-22_04-lts-gen2",
+                        "version": "latest"
+                    },
+                    "osDisk": {
+                        "name": "test-os-disk",
+                        "caching": "ReadWrite",
+                        "createOption": "FromImage"
+                    }
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', 'test-vm-nic')]"
+                        }
+                    ]
+                },
+                "diagnosticsProfile": {
+                    "bootDiagnostics": {
+                        "enabled": false
+                    }
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Network/publicIPAddresses",
+            "apiVersion": "2023-04-01",
+            "name": "test-bastion-ip",
+            "location": "[parameters('region_name')]",
+            "tags": {},
+            "sku": {
+                "name": "Standard",
+                "tier": "Regional"
+            },
+            "properties": {
+                "publicIPAllocationMethod": "Static"
+            }
+        },
+        {
+            "type": "Microsoft.Network/bastionHosts",
+            "apiVersion": "2023-04-01",
+            "name": "[parameters('bastion_name')]",
+            "location": "[parameters('region_name')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/virtualNetworks', parameters('vnet_name'))]",
+                "[resourceId('Microsoft.Network/publicIPAddresses', 'test-bastion-ip')]"
+            ],
+            "tags": {},
+            "sku": {
+                "name": "Standard"
+            },
+            "properties": {
+                "disableCopyPaste": true,
+                "enableFileCopy": true,
+                "enableIpConnect": true,
+                "enableTunneling": true,
+                "ipConfigurations": [
+                    {
+                        "name": "ipconfig",
+                        "properties": {
+                            "privateIPAllocationMethod": "Dynamic",
+                            "publicIPAddress": {
+                                "id": "[resourceId('Microsoft.Network/publicIPAddresses', 'test-bastion-ip')]"
+                            },
+                            "subnet": {
+                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vnet_name'), 'AzureBastionSubnet')]"
+                            }
+                        }
+                    }
+                ],
+                "scaleUnits": 2
+            }
+        }
+    ],
+    "outputs": {}
+}

@@ -1,0 +1,283 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "nat_ip_name": {
+            "type": "string",
+            "defaultValue": "testnatip"
+        },
+        "nat_gateway_name": {
+            "type": "string",
+            "defaultValue": "testnatgateway"
+        },
+        "nsg_name": {
+            "type": "string",
+            "defaultValue": "testnsg"
+        },
+        "vnet_name": {
+            "type": "string",
+            "defaultValue": "testvnet"
+        },
+        "bastion_name": {
+            "type": "string",
+            "defaultValue": "testbastion"
+        },
+        "identity_name": {
+            "type": "string",
+            "defaultValue": "testidentity"
+        },
+        "nic_name": {
+            "type": "string",
+            "defaultValue": "testnic"
+        },
+        "vm_name": {
+            "type": "string",
+            "defaultValue": "testvm"
+        },
+        "os_disk_name": {
+            "type": "string",
+            "defaultValue": "testdisk"
+        },
+        "vm_size": {
+            "type": "string",
+            "defaultValue": "Standard_B1s"
+        },
+        "username": {
+            "type": "string"
+        },
+        "password": {
+            "type": "secureString"
+        }
+    },
+    "functions": [],
+    "variables": {},
+    "resources": [
+        {
+            "name": "[parameters('nat_ip_name')]",
+            "type": "Microsoft.Network/publicIPAddresses",
+            "apiVersion": "2023-04-01",
+            "location": "[resourceGroup().location]",
+            "tags": {},
+            "sku": {
+                "tier": "Regional",
+                "name": "Standard"
+            },
+            "properties": {
+                "publicIPAllocationMethod": "Static"
+            }
+        },
+        {
+            "name": "[parameters('nat_gateway_name')]",
+            "type": "Microsoft.Network/natGateways",
+            "apiVersion": "2023-11-01",
+            "location": "[resourceGroup().location]",
+            "tags": {},
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/publicIPAddresses', parameters('nat_ip_name'))]"
+            ],
+            "sku": {
+                "name": "Standard"
+            },
+            "properties": {
+                "publicIpAddresses": [
+                    {
+                        "id": "[resourceId('Microsoft.Network/publicIPAddresses', parameters('nat_ip_name'))]"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "[parameters('nsg_name')]",
+            "type": "Microsoft.Network/networkSecurityGroups",
+            "apiVersion": "2023-04-01",
+            "location": "[resourceGroup().location]",
+            "tags": {},
+            "properties": {
+                "securityRules": []
+            }
+        },
+        {
+            "name": "[parameters('vnet_name')]",
+            "type": "Microsoft.Network/virtualNetworks",
+            "apiVersion": "2023-04-01",
+            "location": "[resourceGroup().location]",
+            "tags": {},
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/natGateways', parameters('nat_gateway_name'))]",
+                "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('nsg_name'))]"
+            ],
+            "properties": {
+                "addressSpace": {
+                    "addressPrefixes": [
+                        "192.168.1.0/24"
+                    ]
+                },
+                "subnets": [
+                    {
+                        "name": "testsubnet",
+                        "properties": {
+                            "addressPrefix": "192.168.1.0/29",
+                            "defaultOutboundAccess": true,
+                            "natGateway": {
+                                "id": "[resourceId('Microsoft.Network/natGateways', parameters('nat_gateway_name'))]"
+                            },
+                            "networkSecurityGroup": {
+                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('nsg_name'))]"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "[parameters('bastion_name')]",
+            "type": "Microsoft.Network/bastionHosts",
+            "apiVersion": "2023-11-01",
+            "location": "[resourceGroup().location]",
+            "tags": {},
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/virtualNetworks', parameters('vnet_name'))]"
+            ],
+            "sku": {
+                "name": "Developer"
+            },
+            "properties": {
+                "virtualNetwork": {
+                    "id": "[resourceId('Microsoft.Network/virtualNetworks', parameters('vnet_name'))]"
+                }
+            }
+        },
+        {
+            "name": "[parameters('identity_name')]",
+            "type": "Microsoft.ManagedIdentity/userAssignedIdentities",
+            "apiVersion": "2023-01-31",
+            "location": "[resourceGroup().location]",
+            "tags": {}
+        },
+        {
+            "type": "Microsoft.Authorization/roleAssignments",
+            "apiVersion": "2022-04-01",
+            "name": "[guid(resourceGroup().id, parameters('identity_name'), 'contributor')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('identity_name'))]"
+            ],
+            "tags": {},
+            "properties": {
+                "roleDefinitionId": "[concat(subscription().id, '/providers/Microsoft.Authorization/roleDefinitions/', 'b24988ac-6180-42a0-ab88-20f7382dd24c')]",
+                "principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('identity_name')), '2018-11-30').principalId]",
+                "principalType": "ServicePrincipal",
+                "scope": "[resourceGroup().id]"
+            }
+        },
+        {
+            "name": "[parameters('nic_name')]",
+            "type": "Microsoft.Network/networkInterfaces",
+            "apiVersion": "2023-04-01",
+            "location": "[resourceGroup().location]",
+            "tags": {},
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/virtualNetworks', parameters('vnet_name'))]"
+            ],
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "ipconfig",
+                        "properties": {
+                            "primary": true,
+                            "privateIPAllocationMethod": "Static",
+                            "privateIPAddressVersion": "IPv4",
+                            "privateIPAddress": "192.168.1.4",
+                            "subnet": {
+                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vnet_name'), 'testsubnet')]"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "[parameters('vm_name')]",
+            "type": "Microsoft.Compute/virtualMachines",
+            "apiVersion": "2023-03-01",
+            "location": "[resourceGroup().location]",
+            "identity": {
+                "type": "UserAssigned",
+                "userAssignedIdentities": {
+                    "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('identity_name'))]": {}
+                }
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/networkInterfaces', parameters('nic_name'))]",
+                "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('identity_name'))]"
+            ],
+            "tags": {},
+            "properties": {
+                "hardwareProfile": {
+                    "vmSize": "[parameters('vm_size')]"
+                },
+                "osProfile": {
+                    "computerName": "[parameters('vm_name')]",
+                    "adminUsername": "[parameters('username')]",
+                    "adminPassword": "[parameters('password')]",
+                    "linuxConfiguration": {
+                        "disablePasswordAuthentication": false
+                    }
+                },
+                "storageProfile": {
+                    "imageReference": {
+                        "publisher": "canonical",
+                        "offer": "0001-com-ubuntu-minimal-jammy",
+                        "sku": "minimal-22_04-lts-gen2",
+                        "version": "latest"
+                    },
+                    "osDisk": {
+                        "osType": "Linux",
+                        "name": "[parameters('os_disk_name')]",
+                        "caching": "ReadWrite",
+                        "createOption": "FromImage",
+                        "managedDisk": {
+                            "storageAccountType": "Standard_LRS"
+                            },
+                        "deleteOption": "Delete"
+                    }
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', parameters('nic_name'))]",
+                            "properties": {
+                                "primary": true,
+                                "deleteOption": "Delete"
+                            }
+                        }
+                    ]
+                },
+                "diagnosticsProfile": {
+                    "bootDiagnostics": {
+                        "enabled": false
+                    }
+                }
+            }
+        },
+        {
+            "name": "[concat(parameters('vm_name'), '/tools')]",
+            "type": "Microsoft.Compute/virtualMachines/extensions",
+            "apiVersion": "2023-03-01",
+            "location": "[resourceGroup().location]",
+            "tags": {},
+            "dependsOn": [
+                "[resourceId('Microsoft.Compute/virtualMachines', parameters('vm_name'))]"
+            ],
+            "properties": {
+                "publisher": "Microsoft.Azure.Extensions",
+                "type": "CustomScript",
+                "typeHandlerVersion": "2.1",
+                "autoUpgradeMinorVersion": true,
+                "protectedSettings": {
+                    "script": "H4sIAAAAAAACA5VWbW/bNhD+rl9xy4wixUApzdINSJFhQWsMAdoGiNt92FIYFHmWOUskwSOdOEv/eylRkr3VTdJvFO+Fd89zD6kffixKpYuS0zKjIA1w61mFHoKV3ON/95Qmz+sa1qoB3XALRDUJrkEYh8GrmkCjZ96YuJKa0pZQC2JpedNmabN5xzVZ4zxbem+jD2cCnVcLJeKp8Tu4GiodbAU1lcxhjZwQSHMrQVl0i5/BWNSxAPDCytBYsEY2sZZKeWCbrMvAFjR7C90Rp0Uhscy1kUgmOIG5ME1B6IOdHx/nt3APXa9sCi0YwODZs+v97bMNtGn+oWTWtgEFrAJ+FxyyRdDCK6OJtagkMH4/AcaCJr5AFotvwLuAWYfGUBxf8byhQpobXRsu+Z0wdsPWL45YrXS4jdWk+jx3wG7vFvCoZ7OGZJt3+3PeyF9O5i+O8uOT/KhIJujY79dDoFg2RsKvL1/utcbqmVs8kPqblSW4Wg5HKFehROEjpEzUnEiJ5NOspIptWijQiyLiX6xw45SuqOeV3s5G5CwXK14h5Y0SzpBZ+I7aGEHFdouTgPsMUg9VnCvGJHLXmHiO+fqcncjonO3gUpmf3KP+53/N31zMPpxNDuP4zofxZYKeZyiWBg4+bCzSKcSRzD5eXcTVI904tIaKNGGiVkU2C8q3GSb/9md9zl6bxhqN2sfthiudnTuxjF7Cx6jW9VDaVdu4jSV7xnesz7OZqjRKVm5OH2vuYJCKR9z6JlFRXivyudxWmveGfbfLOFP/V9gY3Sq5kwm7ZFupWJ/3kFK+jGJVUWm2g6kl9v5bHAdyBS25w21jY3RCY42sN3UsJqoiR/A3DfCcfXeaT08oHL4elI7CJ2G9zdRujEDvAXkE2KNzfGFaLW9SwHi5NXDUSp/JPeJLMthzs/aKz6URK3QdFZ3ki1AG7UPHy16Z9QFRnbsa43sltuPbMXMd5ZzYaVE/e2i8YYe/B/J+enJH3eGTwzyVaWh8oiLaaWwmf06vZheX7+evL99M35+/mx7EKjwva2xJvR6uooeI7c9uv+A3iO/XutChrr9LSilHfF23q05YwmgfBwydzJUZbGVQtbxltg6V0mNAe60QDrvDwFTOBMul7N3gVTo/UHzfIoWM/zFYJh9n06tX8dfgpnK23+zfgg15bNoHwGFpjP8C8fOp9o4IAAA="
+                }
+            }
+        }
+    ],
+    "outputs": {}
+}

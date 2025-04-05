@@ -1,0 +1,256 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "region_name": {
+            "type": "string",
+            "defaultValue": "eastus",
+            "metadata": {
+                "description": "description"
+            }
+        },
+        "virtual_network_name": {
+            "type": "string",
+            "defaultValue": "test-vnet",
+            "metadata": {
+                "description": "Name of the Virtual Network."
+            }
+        },
+        "address_prefix": {
+            "type": "string",
+            "defaultValue": "10.0.0.0/16",
+            "metadata": {
+                "description": "Address Prefix of the Virtual Network."
+            }
+        },
+        "subnet_name": {
+            "type": "string",
+            "defaultValue": "test-subnet",
+            "metadata": {
+                "description": "Name of the Subnet."
+            }
+        },
+        "subnet_address": {
+            "type": "string",
+            "defaultValue": "10.0.0.0/24",
+            "metadata": {
+                "description": "Address prefix of the Subnet."
+            }
+        },
+        "public_ip_name": {
+            "type": "string",
+            "defaultValue": "test-ip",
+            "metadata": {
+                "description": "Name of the Public IP."
+            }
+        },
+        "network_security_group_name": {
+            "type": "string",
+            "defaultValue": "test-nsg",
+            "metadata": {
+                "description": "Name of the NSG."
+            }
+        },
+        "virtual_machine_name": {
+            "type": "string",
+            "defaultValue": "test-vm",
+            "metadata": {
+                "description": "Name of the Virtual Machine."
+            }
+        },
+        "virtual_machine_size": {
+            "type": "string",
+            "defaultValue": "Standard_B2s",
+            "metadata": {
+                "description": "Size/SKU of the Virtual Machine."
+            }
+        },
+        "username": {
+            "type": "string",
+            "metadata": {
+                "description": "This is the username of the VM."
+            }
+        },
+        "password": {
+            "type": "secureString",
+            "metadata": {
+                "description": "This is the password of the VM."
+            }
+        },
+        "os_disk_name": {
+            "type": "string",
+            "defaultValue": "test-disk",
+            "metadata": {
+                "description": "Name of the OS disk of the VM."
+            }
+        },        
+        "network_interface": {
+            "type": "string",
+            "defaultValue": "test-nic",
+            "metadata": {
+                "description": "Name of the Network Interface."
+            }
+        }
+    },
+    "functions": [],
+    "variables": {},
+    "resources": [
+        {
+            "name": "[parameters('virtual_network_name')]",
+            "type": "Microsoft.Network/virtualNetworks",
+            "apiVersion": "2023-04-01",
+            "location": "[resourceGroup().location]",
+            "tags": {},
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('network_security_group_name'))]"
+            ],
+            "properties": {
+                "addressSpace": {
+                    "addressPrefixes": ["[parameters('address_prefix')]"]
+                },
+                "subnets": [
+                    {
+                        "name": "[parameters('subnet_name')]",
+                        "properties": {
+                            "addressPrefix": "[parameters('subnet_address')]",
+                            "networkSecurityGroup": {
+                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('network_security_group_name'))]"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "[parameters('public_ip_name')]",
+            "type": "Microsoft.Network/publicIPAddresses",
+            "apiVersion": "2023-04-01",
+            "location": "[resourceGroup().location]",
+            "tags": {},
+            "properties": {
+                "publicIPAllocationMethod": "Static"
+            },
+            "sku": {
+                "name": "Standard",
+                "tier": "Regional"
+            }
+        },
+        {
+            "name": "[parameters('network_security_group_name')]",
+            "type": "Microsoft.Network/networkSecurityGroups",
+            "apiVersion": "2023-04-01",
+            "location": "[resourceGroup().location]",
+            "properties": {
+                "securityRules": [
+                    {
+                        "name": "ssh",
+                        "properties": {
+                            "description": "Allow Inbound SSH Traffic.",
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "22",
+                            "sourceAddressPrefix": "*",
+                            "destinationAddressPrefix": "*",
+                            "access": "Allow",
+                            "priority": 200,
+                            "direction": "Inbound"
+                        }
+                    },
+                    {
+                        "name": "web",
+                        "properties": {
+                            "description": "Allow Inbound HTTP/HTTPS Traffic.",
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "destinationPortRanges": [
+                              "80",
+                              "443"
+                            ],
+                            "sourceAddressPrefix": "*",
+                            "destinationAddressPrefix": "*",
+                            "access": "Allow",
+                            "priority": 800,
+                            "direction": "Inbound"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "[parameters('network_interface')]",
+            "type": "Microsoft.Network/networkInterfaces",
+            "apiVersion": "2023-04-01",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/publicIPAddresses', parameters('public_ip_name'))]",
+                "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtual_network_name'))]"
+            ],
+            "tags": {},
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "ipconfig",
+                        "properties": {
+                            "privateIPAllocationMethod": "Dynamic",
+                            "publicIPAddress": {
+                                "id": "[resourceId('Microsoft.Network/publicIPAddresses', parameters('public_ip_name'))]"
+                            },
+                            "subnet": {
+                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtual_network_name'), parameters('subnet_name'))]"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "[parameters('virtual_machine_name')]",
+            "type": "Microsoft.Compute/virtualMachines",
+            "apiVersion": "2023-03-01",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/networkInterfaces', parameters('network_interface'))]"
+            ],
+            "tags": {},
+            "properties": {
+                "hardwareProfile": {
+                    "vmSize": "[parameters('virtual_machine_size')]"
+                },
+                "osProfile": {
+                    "computerName": "[parameters('virtual_machine_name')]",
+                    "adminUsername": "[parameters('username')]",
+                    "adminPassword": "[parameters('password')]",
+                    "linuxConfiguration": {
+                        "disablePasswordAuthentication": false
+                    }
+                },
+                "storageProfile": {
+                    "imageReference": {
+                        "publisher": "canonical",
+                        "offer": "0001-com-ubuntu-minimal-jammy",
+                        "sku": "minimal-22_04-lts-gen2",
+                        "version": "latest"
+                    },
+                    "osDisk": {
+                        "name": "[parameters('os_disk_name')]",
+                        "caching": "ReadWrite",
+                        "createOption": "FromImage"
+                    }
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', parameters('network_interface'))]"
+                        }
+                    ]
+                },
+                "diagnosticsProfile": {
+                    "bootDiagnostics": {
+                        "enabled": false
+                    }
+                }
+            }
+        }
+    ],
+    "outputs": {}
+}

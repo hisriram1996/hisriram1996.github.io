@@ -1,0 +1,24 @@
+title: Welcome to Sriram's IT blogs
+author:
+  name: Sriram H. Iyer
+  email: sriramiyer14@gmail.com
+github_username:  jekyll
+description: >
+  Welcome to my IT blog, where I share my thoughts and insights on 
+  cloud computing, networking, and more in the ever-evolving world
+  of IT. Thanks for visiting and I hope you enjoy reading my posts!
+url: https://hisriram96.github.io/
+markdown: kramdown
+remote_theme: jekyll/minima
+plugins:
+  - jekyll-feed
+  - jekyll-seo-tag
+  - jekyll-sitemap
+header_pages:
+  - about.md
+minima:
+  skin: auto
+  date_format: "%d-%b-%Y"
+  social_links:
+    - { platform: github,         user_url: "https://github.com/hisriram96" }
+    - { platform: linkedin,       user_url: "https://www.linkedin.com/in/sriram-iyer-1160a7125" }

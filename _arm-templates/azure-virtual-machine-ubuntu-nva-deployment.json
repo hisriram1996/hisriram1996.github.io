@@ -1,0 +1,374 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "region_name": {
+            "type": "string",
+            "defaultValue": "eastus"
+        },
+        "vnet_name": {
+            "type": "string",
+            "defaultValue": "test-vnet"
+        },
+        "vnet_prefix": {
+            "type": "string",
+            "defaultValue": "192.168.0.0/24"
+        },
+        "bastionsubnet_prefix": {
+            "type": "string",
+            "defaultValue": "192.168.0.0/26"
+        },
+        "vmsubnet_prefix": {
+            "type": "string",
+            "defaultValue": "192.168.0.64/26"
+        },
+        "trustsubnet_prefix": {
+            "type": "string",
+            "defaultValue": "192.168.0.128/26"
+        },
+        "untrustsubnet_prefix": {
+            "type": "string",
+            "defaultValue": "192.168.0.192/26"
+        },
+        "username": {
+            "type": "string"
+        },
+        "password": {
+            "type": "secureString"
+        },
+        "vm_name": {
+            "type": "string",
+            "defaultValue": "test-vm"
+        },
+        "nva_name": {
+            "type": "string",
+            "defaultValue": "test-nva"
+        },
+        "trust_nic_ip": {
+            "type": "string",
+            "defaultValue": "192.168.0.132"
+        },
+        "untrust_nic_ip": {
+            "type": "string",
+            "defaultValue": "192.168.0.196"
+        },
+        "bastion_name": {
+            "type": "string",
+            "defaultValue": "test-bastion"
+        }
+    },
+    "functions": [],
+    "variables": {},
+    "resources": [
+        {
+            "name": "test-routetable",
+            "type": "Microsoft.Network/routeTables",
+            "apiVersion": "2023-04-01",
+            "location": "[parameters('region_name')]",
+            "tags": {},
+            "properties": {
+                "routes": [
+                    {
+                        "name": "default-route",
+                        "properties": {
+                            "addressPrefix": "0.0.0.0/0",
+                            "nextHopType": "VirtualAppliance",
+                            "nextHopIpAddress": "[parameters('trust_nic_ip')]"
+                        }
+                    }
+                ],
+                "disableBgpRoutePropagation": true
+            }
+        },
+        {
+            "name": "[parameters('vnet_name')]",
+            "type": "Microsoft.Network/virtualNetworks",
+            "apiVersion": "2023-04-01",
+            "location": "[resourceGroup().location]",
+            "tags": {},
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/routeTables', 'test-routetable')]"
+            ],
+            "properties": {
+                "addressSpace": {
+                    "addressPrefixes": [
+                        "[parameters('vnet_prefix')]"
+                    ]
+                },
+                "subnets": [
+                    {
+                        "name": "AzureBastionSubnet",
+                        "properties": {
+                            "addressPrefix": "[parameters('bastionsubnet_prefix')]"
+                        }
+                    },
+                    {
+                        "name": "untrust-subnet",
+                        "properties": {
+                            "addressPrefix": "[parameters('untrustsubnet_prefix')]"
+                        }
+                    },
+                    {
+                        "name": "trust-subnet",
+                        "properties": {
+                            "addressPrefix": "[parameters('trustsubnet_prefix')]"
+                        }
+                    },
+                    {
+                        "name": "vm-subnet",
+                        "properties": {
+                            "addressPrefix": "[parameters('vmsubnet_prefix')]",
+                            "routeTable": {
+                                "id": "[resourceId('Microsoft.Network/routeTables', 'test-routetable')]"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "bastion-ip",
+            "type": "Microsoft.Network/publicIPAddresses",
+            "apiVersion": "2023-04-01",
+            "location": "[parameters('region_name')]",
+            "tags": {},
+            "sku": {
+                "name": "Standard",
+                "tier": "Regional"
+            },
+            "properties": {
+                "publicIPAllocationMethod": "Static"
+            }
+        },
+		{
+            "type": "Microsoft.Network/bastionHosts",
+            "apiVersion": "2023-04-01",
+            "name": "[parameters('bastion_name')]",
+            "location": "[parameters('region_name')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/virtualNetworks', parameters('vnet_name'))]",
+                "[resourceId('Microsoft.Network/publicIPAddresses', 'bastion-ip')]"
+            ],
+            "tags": {},
+            "sku": {
+            	"name": "Basic"
+            },
+            "properties": {
+            	"disableCopyPaste": false,
+            	"enableFileCopy": false,
+            	"enableIpConnect": false,
+            	"enableKerberos": false,
+            	"enableShareableLink": false,
+            	"enableTunneling": false,
+            	"ipConfigurations": [
+                    {
+                	    "name": "ipconfig",
+                	    "properties": {
+                  	        "privateIPAllocationMethod": "Dynamic",
+                  	        "publicIPAddress": {
+                        	    "id": "[resourceId('Microsoft.Network/publicIPAddresses', 'bastion-ip')]"
+                            },
+                          	"subnet": {
+                            	"id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vnet_name'), 'AzureBastionSubnet')]"
+                            }
+                        }
+                    }
+                ],
+            	"scaleUnits": 2
+            }
+        },
+        {
+            "name": "[concat(parameters('vm_name'), '-', 'nic')]",
+            "type": "Microsoft.Network/networkInterfaces",
+            "apiVersion": "2023-04-01",
+            "location": "[parameters('region_name')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/virtualNetworks', parameters('vnet_name'))]"
+            ],
+            "tags": {},
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "ipconfig",
+                        "properties": {
+                            "privateIPAllocationMethod": "Dynamic",
+                            "subnet": {
+                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vnet_name'), 'vm-subnet')]"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "[parameters('vm_name')]",
+            "type": "Microsoft.Compute/virtualMachines",
+            "apiVersion": "2023-03-01",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/networkInterfaces', concat(parameters('vm_name'), '-', 'nic'))]"
+            ],
+            "tags": {},
+            "properties": {
+                "hardwareProfile": {
+                    "vmSize": "Standard_B2s"
+                },
+                "osProfile": {
+                    "computerName": "[parameters('vm_name')]",
+                    "adminUsername": "[parameters('username')]",
+                    "adminPassword": "[parameters('password')]"
+                },
+                "storageProfile": {
+                    "imageReference": {
+                        "publisher": "canonical",
+                        "offer": "0001-com-ubuntu-server-jammy",
+                        "sku": "22_04-lts-gen2",
+                        "version": "latest"
+                    },
+                    "osDisk": {
+                        "name": "[concat(parameters('vm_name'), '-', 'disk')]",
+                        "caching": "ReadWrite",
+                        "createOption": "FromImage"
+                    }
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', concat(parameters('vm_name'), '-', 'nic'))]",
+                            "properties": {
+                                "primary": true
+                            }
+                        }
+                    ]
+                },
+                "diagnosticsProfile": {
+                    "bootDiagnostics": {
+                        "enabled": false
+                    }
+                }
+            }
+        },
+        {
+            "name": "nva-ip",
+            "type": "Microsoft.Network/publicIPAddresses",
+            "apiVersion": "2023-04-01",
+            "location": "[parameters('region_name')]",
+            "tags": {},
+            "sku": {
+                "name": "Standard",
+                "tier": "Regional"
+            },
+            "properties": {
+                "publicIPAllocationMethod": "Static"
+            }
+        },
+        {
+            "name": "[concat('untrust', '-', 'nic')]",
+            "type": "Microsoft.Network/networkInterfaces",
+            "apiVersion": "2023-04-01",
+            "location": "[parameters('region_name')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/publicIPAddresses', 'nva-ip')]",
+                "[resourceId('Microsoft.Network/virtualNetworks', parameters('vnet_name'))]"
+            ],
+            "tags": {},
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "ipconfig",
+                        "properties": {
+                            "privateIPAllocationMethod": "Static",
+                            "privateIPAddress": "[parameters('untrust_nic_ip')]",
+                            "publicIPAddress": {
+                                "id": "[resourceId('Microsoft.Network/publicIPAddresses', 'nva-ip')]"
+                            },
+                            "subnet": {
+                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vnet_name'), 'untrust-subnet')]"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "[concat('trust', '-', 'nic')]",
+            "type": "Microsoft.Network/networkInterfaces",
+            "apiVersion": "2023-04-01",
+            "location": "[parameters('region_name')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/virtualNetworks', parameters('vnet_name'))]"
+            ],
+            "tags": {},
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "ipconfig",
+                        "properties": {
+                            "privateIPAllocationMethod": "Static",
+                            "privateIPAddress": "[parameters('trust_nic_ip')]",
+                            "subnet": {
+                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vnet_name'), 'trust-subnet')]"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "[parameters('nva_name')]",
+            "type": "Microsoft.Compute/virtualMachines",
+            "apiVersion": "2023-03-01",
+            "location": "[parameters('region_name')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/networkInterfaces', concat('untrust', '-', 'nic'))]",
+                "[resourceId('Microsoft.Network/networkInterfaces', concat('trust', '-', 'nic'))]"
+            ],
+            "tags": {},
+            "properties": {
+                "hardwareProfile": {
+                    "vmSize": "Standard_B2s"
+                },
+                "osProfile": {
+                    "computerName": "[parameters('nva_name')]",
+                    "adminUsername": "[parameters('username')]",
+                    "adminPassword": "[parameters('password')]"
+                },
+                "storageProfile": {
+                    "imageReference": {
+                        "publisher": "canonical",
+                        "offer": "0001-com-ubuntu-server-jammy",
+                        "sku": "22_04-lts-gen2",
+                        "version": "latest"
+                    },
+                    "osDisk": {
+                        "name": "[concat(parameters('nva_name'), '-', 'disk')]",
+                        "caching": "ReadWrite",
+                        "createOption": "FromImage"
+                    }
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', concat('untrust', '-', 'nic'))]",
+                            "properties": {
+                                "primary": true
+                            }
+                        },
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', concat('trust', '-', 'nic'))]",
+                            "properties": {
+                                "primary": false
+                            }
+                        }
+                    ]
+                },
+                "diagnosticsProfile": {
+                    "bootDiagnostics": {
+                        "enabled": false
+                    }
+                }
+            }
+        }
+    ],
+    "outputs": {}
+}
