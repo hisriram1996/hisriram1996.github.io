@@ -43,7 +43,7 @@ az network vnet create --name "test-vnet" --resource-group "$rg" --location "$re
 az network vnet subnet create --name "FTPSubnet" --vnet-name "test-vnet" --resource-group "$rg" --address-prefixes "10.0.0.0/26" --default-outbound-access "false" --nat-gateway "test-nat" --network-security-group "test-nsg"
 az network vnet subnet create --name "AzureBastionSubnet" --vnet-name "test-vnet" --resource-group "$rg" --address-prefixes "10.0.0.64/26" --default-outbound-access "false"
 az network public-ip create --name "bastion-ip" --resource-group "$rg" --location "$region" --version "IPv4" --allocation-method Static --sku "Standard" --tier "Regional" --zone 1 2 3
-az network bastion create --name "test-bastion" --resource-group "$rg" --vnet-name "test-vnet" --public-ip-address "bastion-ip" --sku "Standard"
+az network bastion create --name "test-bastion" --resource-group "$rg" --vnet-name "test-vnet" --public-ip-address "bastion-ip" --sku "Standard" --no-wait true
 az network lb create --name "test-lb" --resource-group "$rg" --sku "Standard" --vnet-name "test-vnet" --subnet "FTPSubnet" --frontend-ip-name "ftp-ip" --backend-pool-name "ftp-pool"
 az network lb probe create --name "ftp-probe" --lb-name "test-lb" --resource-group "$rg" --protocol "tcp" --port "21"
 az network lb rule create --name "ftp-rule" --lb-name "test-lb" --resource-group "$rg" --frontend-ip-name "ftp-ip" --backend-pool-name "ftp-pool" --protocol "tcp" --frontend-port "21" --backend-port "21" --probe-name "ftp-probe"
