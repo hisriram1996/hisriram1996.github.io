@@ -51,7 +51,6 @@ for i in {1..2}; do az network nic create --name "ftp-nic-$i" --resource-group "
 for i in {1..2}; do az vm create --name "ftp-server-$i" --resource-group "$rg" --location "$region" --image "canonical:ubuntu-24_04-lts:server:latest" --os-disk-name "ftp-disk-$i" --nics "ftp-nic-$i" --authentication-type "password" --admin-username "microsoft" --admin-password "Microsoft@123"; done
 az network nic create --name "windows-nic" --resource-group "$rg" --vnet-name "test-vnet" --subnet "FTPSubnet"
 az vm create --name "windows-server" --resource-group "$rg" --location "$region" --image "MicrosoftWindowsServer:WindowsServer:2025-datacenter-g2:latest" --os-disk-name "windows-disk" --nics "windows-nic" --authentication-type "password" --admin-username "microsoft" --admin-password "Microsoft@123"
-az vm extension set --name "InstallWinSCP" --vm-name "windows-vm" --resource-group "$rg" --publisher "Microsoft.Compute" --version 1.10 --settings '{"commandToExecute":"powershell.exe -Command \"Install-Module -Name WinSCP -Force -Scope AllUsers\""}'
 ```
 
 ## Configuring FTP in passive mode using vsftpd
