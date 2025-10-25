@@ -373,7 +373,7 @@
         {
             "type": "Microsoft.Compute/virtualMachines/extensions",
             "apiVersion": "2025-04-01",
-            "name": "InstallWinSCP",
+            "name": "windows-vm/InstallWinSCP",
             "location": "[parameters('location')]",
             "properties": {
                 "publisher": "Microsoft.Compute",
