@@ -2,7 +2,7 @@
     "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
     "contentVersion": "1.0.0.0",
     "parameters": {
-        "region": {
+        "location": {
             "type": "string",
             "defaultValue": "centralindia"
         },
@@ -24,7 +24,7 @@
             "type": "Microsoft.Network/networkSecurityGroups",
             "apiVersion": "2024-10-01",
             "name": "test-nsg",
-            "location": "[parameters('region')]",
+            "location": "[parameters('location')]",
             "properties": {
                 "securityRules": []
             }
@@ -33,7 +33,7 @@
             "type": "Microsoft.Network/publicIPAddresses",
             "apiVersion": "2024-10-01",
             "name": "bastion-ip",
-            "location": "[parameters('region')]",
+            "location": "[parameters('location')]",
             "zones": ["1", "2", "3"],
             "sku": {
                 "name": "Standard",
@@ -48,7 +48,7 @@
             "type": "Microsoft.Network/publicIPAddresses",
             "apiVersion": "2024-10-01",
             "name": "nat-ip",
-            "location": "[parameters('region')]",
+            "location": "[parameters('location')]",
             "zones": ["1", "2", "3"],
             "sku": {
                 "name": "Standard",
@@ -63,7 +63,7 @@
             "type": "Microsoft.Network/natGateways",
             "apiVersion": "2024-10-01",
             "name": "test-nat",
-            "location": "[parameters('region')]",
+            "location": "[parameters('location')]",
             "dependsOn": [
                 "[resourceId('Microsoft.Network/publicIPAddresses', 'nat-ip')]"
             ],
@@ -82,7 +82,7 @@
             "type": "Microsoft.Network/virtualNetworks",
             "apiVersion": "2024-10-01",
             "name": "test-vnet",
-            "location": "[parameters('region')]",
+            "location": "[parameters('location')]",
             "dependsOn": [
                 "[resourceId('Microsoft.Network/networkSecurityGroups', 'test-nsg')]",
                 "[resourceId('Microsoft.Network/natGateways', 'test-nat')]"
@@ -165,7 +165,7 @@
             "type": "Microsoft.Network/loadBalancers",
             "apiVersion": "2024-10-01",
             "name": "test-lb",
-            "location": "[parameters('region')]",
+            "location": "[parameters('location')]",
             "sku": {
                 "name": "Standard",
                 "tier": "Regional"
@@ -233,7 +233,7 @@
             "type": "Microsoft.Network/networkInterfaces",
             "apiVersion": "2024-10-01",
             "name": "[concat('ftp-nic-', add(copyIndex(), 1))]",
-            "location": "[parameters('region')]",
+            "location": "[parameters('location')]",
             "dependsOn": [
                 "[resourceId('Microsoft.Network/loadBalancers', 'test-lb')]"
             ],
@@ -256,7 +256,7 @@
             "type": "Microsoft.Network/networkInterfaces",
             "apiVersion": "2024-10-01",
             "name": "windows-nic",
-            "location": "[parameters('region')]",
+            "location": "[parameters('location')]",
             "dependsOn": [
                 "[resourceId('Microsoft.Network/virtualNetworks', 'test-vnet')]"
             ],
@@ -282,7 +282,7 @@
             "type": "Microsoft.Compute/virtualMachines",
             "apiVersion": "2025-04-01",
             "name": "[concat('test-ftp-', add(copyIndex(), 1))]",
-            "location": "[parameters('region')]",
+            "location": "[parameters('location')]",
             "dependsOn": [
                 "[resourceId('Microsoft.Network/networkInterfaces', concat('ftp-nic-', add(copyIndex(), 1)))]"
             ],
@@ -328,7 +328,7 @@
             "type": "Microsoft.Compute/virtualMachines",
             "apiVersion": "2025-04-01",
             "name": "windows-vm",
-            "location": "[parameters('region')]",
+            "location": "[parameters('location')]",
             "dependsOn": [
                 "[resourceId('Microsoft.Network/networkInterfaces', 'windows-nic')]"
             ],
