@@ -48,7 +48,7 @@ az network lb create --name "test-lb" --resource-group "$rg" --sku "Standard" --
 az network lb probe create --name "ftp-probe" --lb-name "test-lb" --resource-group "$rg" --protocol "tcp" --port "21"
 az network lb rule create --name "ftp-rule" --lb-name "test-lb" --resource-group "$rg" --frontend-ip-name "ftp-ip" --backend-pool-name "ftp-pool" --protocol "tcp" --frontend-port "21" --backend-port "21" --probe-name "ftp-probe"
 for i in {1..2}; do az network nic create --name "ftp-nic-$i" --resource-group "$rg" --vnet-name "test-vnet" --subnet "FTPSubnet" --lb-name "test-lb" --lb-address-pools "ftp-pool"; done
-for i in {1..2}; do az vm create --name "ftp-server-$i" --resource-group "$rg" --location "$region" --image "canonical:ubuntu-24_04-lts:server:latest" --os-disk-name "ftp-disk-$i" --nics "ftp-nic-$i" --authentication-type "password" --admin-username "microsoft" --admin-password "Microsoft@123"; done
+for i in {1..2}; do az vm create --name "ftp-server-$i" --resource-group "$rg" --location "$region" --image "canonical:ubuntu-24_04-lts:server:latest" --os-disk-name "ftp-disk-$i" --nics "ftp-nic-$i" --authentication-type "password" --admin-username "<username>" --admin-password "<password>"; done
 az network nic create --name "windows-nic" --resource-group "$rg" --vnet-name "test-vnet" --subnet "FTPSubnet"
 az vm create --name "windows-server" --resource-group "$rg" --location "$region" --image "MicrosoftWindowsServer:WindowsServer:2025-datacenter-g2:latest" --os-disk-name "windows-disk" --nics "windows-nic" --authentication-type "password" --admin-username "<username>" --admin-password "<password>"
 ```
