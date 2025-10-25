@@ -206,7 +206,7 @@ In this section, we will issue a trusted CA certificate using [Let's Encrypt](ht
 
    Example:
 
-   <img src="hhttps://raw.githubusercontent.com/hisriram1996/hisriram1996.github.io/refs/heads/main/_pictures/_images_2024-01-14-Configure-web-server-in-Linux-VMs-using-Nginx/image5.png">
+   <img src="https://raw.githubusercontent.com/hisriram1996/hisriram1996.github.io/refs/heads/main/_pictures/_images_2024-01-14-Configure-web-server-in-Linux-VMs-using-Nginx/image5.png">
 
 Generated certificate files coud be found at `/etc/letsencrypt/live`.
 
