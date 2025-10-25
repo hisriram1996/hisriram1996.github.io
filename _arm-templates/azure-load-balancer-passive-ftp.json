@@ -381,7 +381,7 @@
                 "typeHandlerVersion": "1.10",
                 "autoUpgradeMinorVersion": true,
                 "settings": {
-                    "commandToExecute": "powershell.exe Install-Module -Name WinSCP -Force"
+                    "commandToExecute": "powershell.exe -Command \"Install-Module -Name WinSCP -Force -Scope AllUsers\""
                 }
             },
             "dependsOn": [
