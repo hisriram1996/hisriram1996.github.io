@@ -1,0 +1,374 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "region": {
+            "type": "string",
+            "defaultValue": "centralindia"
+        },
+        "adminUsername": {
+            "type": "string",
+            "metadata": {
+                "description": "The administrator username for the VM."
+            }
+        },
+        "adminPassword": {
+            "type": "securestring",
+            "metadata": {
+                "description": "The administrator password for the VM."
+            }
+        }
+    },
+    "resources": [
+        {
+            "type": "Microsoft.Network/networkSecurityGroups",
+            "apiVersion": "2024-10-01",
+            "name": "test-nsg",
+            "location": "[parameters('region')]",
+            "properties": {
+                "securityRules": []
+            }
+        },
+        {
+            "type": "Microsoft.Network/publicIPAddresses",
+            "apiVersion": "2024-10-01",
+            "name": "bastion-ip",
+            "location": "[parameters('region')]",
+            "zones": ["1", "2", "3"],
+            "sku": {
+                "name": "Standard",
+                "tier": "Regional"
+            },
+            "properties": {
+            "publicIPAllocationMethod": "Static",
+            "deleteOption": "Delete"
+            }
+        },
+        {
+            "type": "Microsoft.Network/publicIPAddresses",
+            "apiVersion": "2024-10-01",
+            "name": "nat-ip",
+            "location": "[parameters('region')]",
+            "zones": ["1", "2", "3"],
+            "sku": {
+                "name": "Standard",
+                "tier": "Regional"
+            },
+            "properties": {
+            "publicIPAllocationMethod": "Static",
+            "deleteOption": "Delete"
+            }
+        },
+        {
+            "type": "Microsoft.Network/natGateways",
+            "apiVersion": "2024-10-01",
+            "name": "test-nat",
+            "location": "[parameters('region')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/publicIPAddresses', 'nat-ip')]"
+            ],
+            "sku": {
+                "name": "Standard"
+            },
+            "properties": {
+                "publicIPAddresses": [
+                    {
+                        "id": "[resourceId('Microsoft.Network/publicIPAddresses', 'nat-ip')]"
+                    }
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Network/virtualNetworks",
+            "apiVersion": "2024-10-01",
+            "name": "test-vnet",
+            "location": "[parameters('region')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/networkSecurityGroups', 'test-nsg')]",
+                "[resourceId('Microsoft.Network/natGateways', 'test-nat')]"
+            ],
+            "properties": {
+                "addressSpace": {
+                    "addressPrefixes": [
+                        "10.0.0.0/24"
+                    ]
+                },
+                "subnets": [
+                    {
+                        "name": "FTPSubnet",
+                        "properties": {
+                            "addressPrefix": "10.0.0.0/29",
+                            "networkSecurityGroup": {
+                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', 'test-nsg')]"
+                            },
+                            "natGateway": {
+                                "id": "[resourceId('Microsoft.Network/natGateways', 'test-nat')]"
+                            }
+                        }
+                    },
+                    {
+                        "name": "VMSubnet",
+                        "properties": {
+                            "addressPrefix": "10.0.0.8/29",
+                            "networkSecurityGroup": {
+                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', 'test-nsg')]"
+                            },
+                            "natGateway": {
+                                "id": "[resourceId('Microsoft.Network/natGateways', 'test-nat')]"
+                            }
+                        }
+                    },
+                    {
+                        "name": "AzureBastionSubnet",
+                        "properties": {
+                            "addressPrefix": "10.0.0.64/26"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "microsoft.network/bastionhosts",
+            "apiVersion": "2025-01-01",
+            "name": "test-bastion",
+            "location": "centralindia",
+            "sku": {
+                "name": "Standard"
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/publicIPAddresses', 'bastion-ip')]",
+                "[resourceId('Microsoft.Network/virtualNetworks', 'test-vnet')]"
+            ],
+            "properties": {
+                "enableTunneling": true,
+                "enableIpConnect": true,
+                "enableFileCopy": true,
+                "disableCopyPaste": false,
+                "enableKerberos": false,
+                "ipConfigurations": [
+                    {
+                        "name": "ipconfig",
+                        "properties": {
+                            "privateIPAllocationMethod": "Dynamic",
+                            "publicIPAddress": {
+                                "id": "[resourceId('Microsoft.Network/publicIPAddresses', 'bastion-ip')]"
+                            },
+                            "subnet": {
+                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', 'test-vnet', 'AzureBastionSubnet')]"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Network/loadBalancers",
+            "apiVersion": "2024-10-01",
+            "name": "test-lb",
+            "location": "[parameters('region')]",
+            "sku": {
+                "name": "Standard",
+                "tier": "Regional"
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/virtualNetworks', 'test-vnet')]"
+            ],
+            "properties": {
+                "frontendIPConfigurations": [
+                    {
+                        "name": "ftp-ip",
+                        "properties": {
+                            "subnet": {
+                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', 'test-vnet', 'FTPSubnet')]"
+                            },
+                            "privateIPAllocationMethod": "Dynamic"
+                        }
+                    }
+                ],
+                "backendAddressPools": [
+                    {
+                        "name": "ftp-pool"
+                    }
+                ],
+                "probes": [
+                    {
+                        "name": "ftp-probe",
+                        "properties": {
+                            "protocol": "Tcp",
+                            "port": 21,
+                            "intervalInSeconds": 5,
+                            "numberOfProbes": 2
+                        }
+                    }
+                ],
+                "loadBalancingRules": [
+                    {
+                        "name": "ftp-rule",
+                        "properties": {
+                            "protocol": "Tcp",
+                            "frontendPort": 21,
+                            "backendPort": 21,
+                            "enableFloatingIP": false,
+                            "idleTimeoutInMinutes": 4,
+                            "loadDistribution": "Default",
+                            "frontendIPConfiguration": {
+                                "id": "[resourceId('Microsoft.Network/loadBalancers/frontendIPConfigurations', 'test-lb', 'ftp-ip')]"
+                            },
+                            "backendAddressPool": {
+                                "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', 'test-lb', 'ftp-pool')]"
+                            },
+                            "probe":  {
+                                "id": "[resourceId('Microsoft.Network/loadBalancers/probes', 'test-lb', 'ftp-probe')]"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "copy": {
+                "name": "nic-count",
+                "count": 2
+            },
+            "type": "Microsoft.Network/networkInterfaces",
+            "apiVersion": "2024-10-01",
+            "name": "[concat('ftp-nic-', add(copyIndex(), 1))]",
+            "location": "[parameters('region')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/loadBalancers', 'test-lb')]"
+            ],
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "ipconfig",
+                        "properties": {
+                            "subnet": {
+                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', 'test-vnet', 'FTPSubnet')]"
+                            },
+                            "privateIPAllocationMethod": "Dynamic",
+                            "loadBalancerBackendAddressPools": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', 'test-lb', 'ftp-pool')]"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Network/networkInterfaces",
+            "apiVersion": "2024-10-01",
+            "name": "windows-nic",
+            "location": "[parameters('region')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/virtualNetworks', 'test-vnet')]"
+            ],
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "ipconfig",
+                        "properties": {
+                            "subnet": {
+                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', 'test-vnet', 'VMSubnet')]"
+                            },
+                            "privateIPAllocationMethod": "Dynamic"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "copy": {
+                "name": "vm-count",
+                "count": 2
+            },
+            "type": "Microsoft.Compute/virtualMachines",
+            "apiVersion": "2025-04-01",
+            "name": "[concat('test-ftp-', add(copyIndex(), 1))]",
+            "location": "[parameters('region')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/networkInterfaces', concat('ftp-nic-', add(copyIndex(), 1)))]"
+            ],
+            "properties": {
+                "hardwareProfile": {
+                    "vmSize": "Standard_B2s"
+                },
+                "osProfile": {
+                    "computerName": "[concat('test-ftp-', add(copyIndex(), 1))]",
+                    "adminUsername": "[parameters('adminUsername')]",
+                    "adminPassword": "[parameters('adminPassword')]"
+                    },
+                "storageProfile": {
+                    "imageReference": {
+                        "publisher": "Canonical",
+                        "offer": "0001-com-ubuntu-server-jammy",
+                        "sku": "22_04-lts-gen2",
+                        "version": "latest"
+                    },
+                    "osDisk": {
+                        "createOption": "FromImage",
+                        "name": "[concat('ftp-osdisk-', add(copyIndex(), 1))]",
+                        "deleteOption": "Delete",
+                        "managedDisk": {
+                            "storageAccountType": "Standard_LRS"
+                        }
+                    }
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', concat('ftp-nic-', add(copyIndex(), 1)))]",
+                            "properties": {
+                                "primary": true,
+                                "deleteOption": "Delete"
+                            }
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Compute/virtualMachines",
+            "apiVersion": "2025-04-01",
+            "name": "windows-vm",
+            "location": "[parameters('region')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/networkInterfaces', 'windows-nic')]"
+            ],
+            "properties": {
+                "hardwareProfile": {
+                    "vmSize": "Standard_D2s_v5"
+                },
+                "osProfile": {
+                    "computerName": "windows-vm",
+                    "adminUsername": "[parameters('adminUsername')]",
+                    "adminPassword": "[parameters('adminPassword')]"
+                    },
+                "storageProfile": {
+                    "imageReference": {
+                        "publisher": "MicrosoftWindowsServer",
+                        "offer": "WindowsServer",
+                        "sku": "2025-datacenter-g2",
+                        "version": "latest"
+                    },
+                    "osDisk": {
+                        "createOption": "FromImage",
+                        "name": "windows-disk",
+                        "deleteOption": "Delete",
+                        "managedDisk": {
+                            "storageAccountType": "Standard_LRS"
+                        }
+                    }
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', 'windows-nic')]",
+                            "properties": {
+                                "primary": true,
+                                "deleteOption": "Delete"
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+    ]
+}
