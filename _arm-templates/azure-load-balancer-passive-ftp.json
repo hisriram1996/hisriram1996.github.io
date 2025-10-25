@@ -369,24 +369,6 @@
                     ]
                 }
             }
-        },
-        {
-            "type": "Microsoft.Compute/virtualMachines/extensions",
-            "apiVersion": "2025-04-01",
-            "name": "windows-vm/InstallWinSCP",
-            "location": "[parameters('location')]",
-            "properties": {
-                "publisher": "Microsoft.Compute",
-                "type": "CustomScriptExtension",
-                "typeHandlerVersion": "1.10",
-                "autoUpgradeMinorVersion": true,
-                "settings": {
-                    "commandToExecute": "powershell.exe -Command \"Install-Module -Name WinSCP -Force -Scope AllUsers\""
-                }
-            },
-            "dependsOn": [
-                "[resourceId('Microsoft.Compute/virtualMachines', 'windows-vm')]"
-            ]
         }
     ]
 }
