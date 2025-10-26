@@ -246,7 +246,11 @@
                                 "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', 'test-vnet', 'FTPSubnet')]"
                             },
                             "privateIPAllocationMethod": "Dynamic",
-                            "loadBalancerBackendAddressPools": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', 'test-lb', 'ftp-pool')]"
+                            "loadBalancerBackendAddressPools": [
+                                {
+                                    "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', 'test-lb', 'ftp-pool')]"
+                                }
+                            ]
                         }
                     }
                 ]
