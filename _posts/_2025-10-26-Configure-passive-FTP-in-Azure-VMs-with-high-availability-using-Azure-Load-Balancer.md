@@ -5,16 +5,17 @@ author: Sriram H. Iyer
 ---
 
 ## Table of Contents
-- [Overview](#overview)
-- [Pre-requisites](#pre-requisites)
-- [Network Architecture](#network-architecture)
-- [Configuring FTP in passive mode using vsftpd](#configuring-ftp-in-passive-mode-using-vsftpd)
-- [Verifying file transfer using WinSCP](#verifying-file-transfer-using-winscp)
-- [Understanding how passive FTP works with the Azure Load balancer](#understanding-how-passive-FTP-works-with-the-azure-load-balancer)
+  - [Overview](#overview)
+  - [Pre-requisites](#pre-requisites)
+  - [Network Architecture](#network-architecture)
+  - [Configuring FTP in passive mode using vsftpd](#configuring-ftp-in-passive-mode-using-vsftpd)
+  - [Verifying file transfer using WinSCP](#verifying-file-transfer-using-winscp)
+  - [Understanding how passive FTP works with the Azure Load balancer](#understanding-how-passive-ftp-works-with-the-azure-load-balancer)
+  - [Why not use Active FTP?](#why-not-use-active-ftp)
 
 ## Overview
 
-In this blog, we will deploy Azure VMs of Ubuntu OS and configure them as FTP servers in passive mode. The Azure VMs would be in the backend pool of Azure Load Balancer (internal) for high availability.
+In this blog, we will deploy Azure VMs of Ubuntu OS and configure them as FTP servers in passive mode (PASV). The Azure VMs would be in the backend pool of Azure Load Balancer (internal) for high availability.
 
 We will use the [vsftpd](https://help.ubuntu.com/community/vsftpd) package for configuring the FTP service.
 
@@ -104,14 +105,28 @@ Open the WinSCP and use the frontend private IP address of the Azure Load Balanc
 
 <img src="https://raw.githubusercontent.com/hisriram1996/hisriram1996.github.io/refs/heads/main/_pictures/_images_2025-10-26-Configure-passive-FTP-in-Azure-VMs-with-high-availability-using-Azure-Load-Balancer/image2.png">
 
-
+You could transfer the files using WinSCP.
 
 ## Understanding how passive FTP works with the Azure Load balancer
 
-Example:
+The Azure Load Balancer is configured with load balancing rule for TCP port 21 which is used for control connection of the FTP. The FTP client could connect to either of the VMs in the backend pool using the frontend IP address of the Azure Load Balancer. However, the backend VM sends its private IP address when entering passive mode of FTP for data connection.
 
-<img src="https://raw.githubusercontent.com/hisriram1996/hisriram1996.github.io/refs/heads/main/_pictures/_images_2024-11-05-Configure-cloudinit-in-Azure-VM/image1.png">
+The **vsftpd** service is configured with `pasv_promiscuous=YES`, so data connections are not verified to ensure they originate from the same IP address (the frontend IP address of the Azure Load Balancer). The FTP client must ensure that it does not enforce a check requiring data connections to originate from the same frontend IP address of the Azure Load Balancer to which the control connection was established; otherwise, the data connection will fail to initiate from the client.
 
-We could debug any issues in `cloud-init` configuration of Azure VM by following this [public guidance](https://learn.microsoft.com/en-us/azure/virtual-machines/linux/cloud-init-troubleshooting) from Azure.
+WinSCP supports having different IP addresses for the control connection and the data connection.
+
+<img src="https://raw.githubusercontent.com/hisriram1996/hisriram1996.github.io/refs/heads/main/_pictures/_images_2025-10-26-Configure-passive-FTP-in-Azure-VMs-with-high-availability-using-Azure-Load-Balancer/image3.png">
+
+<img src="https://raw.githubusercontent.com/hisriram1996/hisriram1996.github.io/refs/heads/main/_pictures/_images_2025-10-26-Configure-passive-FTP-in-Azure-VMs-with-high-availability-using-Azure-Load-Balancer/image4.png">
+
+We are bypassing the Azure Load Balancer for FTP data connections because a port range cannot be specified in the load balancing rule. However, setting `pasv_promiscuous=YES` in **vsftpd** disables an important security feature, which verifies that passive-mode connections originate from the same IP address as the control connection that initiates the data transfer. If it is required to set `pasv_promiscuous=NO` in `/etc/vsftpd.conf` then the load balancing rule in Azure Load Balancer must be enabled with HA ports, enabling HA ports will cause all the packets destined to the frontend IP to be forwarded to the backend VMs. You could configure NSG rule for only allowing the control and data ports of FTP. We also need to set session persistence in the load balancing rule of the Azure Load Balancer so that the data connections are forwarded to the same backend VM as the control connection. You could also consider enabling Extended Passive Mode (EPSV) in **vsftpd** by removing the line `cmds_denied=EPSV` in `/etc/vsftpd.conf` file which ensured that the IP address of the data connection is same as that of the control connection.
+
+<img src="https://raw.githubusercontent.com/hisriram1996/hisriram1996.github.io/refs/heads/main/_pictures/_images_2025-10-26-Configure-passive-FTP-in-Azure-VMs-with-high-availability-using-Azure-Load-Balancer/image5.png">
+
+<img src="https://raw.githubusercontent.com/hisriram1996/hisriram1996.github.io/refs/heads/main/_pictures/_images_2025-10-26-Configure-passive-FTP-in-Azure-VMs-with-high-availability-using-Azure-Load-Balancer/image6.png">
+
+## Why not use Active FTP?
+
+
 
 <link rel="alternate" type="application/rss+xml"  href="{{ site.url }}/feed.xml" title="{{ site.title }}">
