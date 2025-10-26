@@ -99,13 +99,11 @@ Example:
 
 ## Verifying file transfer using WinSCP
 
-We would need to install [WinSCP](https://winscp.net/eng/download.php) which is a FTP client in the VM which in not in the backend pool of the Azure Load Balancer.
+We would need to install [WinSCP](https://winscp.net/eng/download.php) which is a FTP client in the VM which is not in the backend pool of the Azure Load Balancer.
 
-Open the WinSCP and use the frontend private IP address of the Azure Load Balancer as the FTP server. The credentials would be of the VMs in the backend pool.
+Open the WinSCP and use the frontend private IP address of the Azure Load Balancer as the FTP server. The credentials would be of the VMs in the backend pool. You could then transfer the files using WinSCP.
 
 <img src="https://raw.githubusercontent.com/hisriram1996/hisriram1996.github.io/refs/heads/main/_pictures/_images_2025-10-26-Configure-passive-FTP-in-Azure-VMs-with-high-availability-using-Azure-Load-Balancer/image2.png">
-
-You could transfer the files using WinSCP.
 
 ## Understanding how passive FTP works with the Azure Load balancer
 
@@ -127,6 +125,46 @@ We are bypassing the Azure Load Balancer for FTP data connections because a port
 
 ## Why not use Active FTP?
 
+We can configure FTP in active mode by configuring the `/etc/vsftpd.conf` with contents below.
 
+```bash
+ftpd_banner=You are in the FTP server.
+listen=YES
+anonymous_enable=NO
+local_enable=YES
+write_enable=YES
+use_localtime=NO
+connect_from_port_20=YES
+idle_session_timeout=240
+data_connection_timeout=240
+pasv_enable=NO
+cmds_denied=EPSV
+```
+
+We will configure the loopback interface with the frontend IP address of the Load Balancer in the backend VMs. The **vsftpd** service will listen to the Azure Load Balancer's frontend IP address.
+
+```bash
+sudo ip addr add <frontend_IP>/<subnet_mask> dev lo:0
+```
+
+We will then configure the Azure Load Balancer with load balancing rules for TCP port 20 and 21 with `Floating IP` enabled.
+
+<img src="https://raw.githubusercontent.com/hisriram1996/hisriram1996.github.io/refs/heads/main/_pictures/_images_2025-10-26-Configure-passive-FTP-in-Azure-VMs-with-high-availability-using-Azure-Load-Balancer/image7.png">
+
+We need to disable passive mode in WinSCP before initiating connection to the frontend IP address of the Azure Load Balancer.
+
+<img src="https://raw.githubusercontent.com/hisriram1996/hisriram1996.github.io/refs/heads/main/_pictures/_images_2025-10-26-Configure-passive-FTP-in-Azure-VMs-with-high-availability-using-Azure-Load-Balancer/image8.png">
+
+<img src="https://raw.githubusercontent.com/hisriram1996/hisriram1996.github.io/refs/heads/main/_pictures/_images_2025-10-26-Configure-passive-FTP-in-Azure-VMs-with-high-availability-using-Azure-Load-Balancer/image9.png">
+
+In [Active FTP](https://slacksite.com/other/ftp.html), the server initiates connection to the client's data port. We could observe that the backend VM sends the TCP **SYN** packet and the client replies with TCP **SYN+ACK**; However, the backend VM does not receive it as the Azure Load Balancer drops the packet. Hence, active FTP is not supported through the Azure Load Balancer. You would need to use Azure Firewall as it supports but active and passive FTP as documented in [Azure Firewall FTP support](https://learn.microsoft.com/en-us/azure/firewall/ftp-support).
+
+Packet capture in the source VM (FTP client):
+
+<img src="https://raw.githubusercontent.com/hisriram1996/hisriram1996.github.io/refs/heads/main/_pictures/_images_2025-10-26-Configure-passive-FTP-in-Azure-VMs-with-high-availability-using-Azure-Load-Balancer/image10.png">
+
+Packet capture in the destination VM (FTP server):
+
+<img src="https://raw.githubusercontent.com/hisriram1996/hisriram1996.github.io/refs/heads/main/_pictures/_images_2025-10-26-Configure-passive-FTP-in-Azure-VMs-with-high-availability-using-Azure-Load-Balancer/image11.png">
 
 <link rel="alternate" type="application/rss+xml"  href="{{ site.url }}/feed.xml" title="{{ site.title }}">
