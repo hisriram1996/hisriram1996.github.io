@@ -94,6 +94,12 @@ sudo systemctl restart vsftpd.service
 
 ## Verifying file transfer using WinSCP
 
+We would need to install [WinSCP](https://winscp.net/eng/download.php) which is a FTP client in the VM which in not in the backend pool of the Azure Load Balancer.
+
+Open the WinSCP and use the frontend private IP address of the Azure Load Balancer as the FTP server. The credentials would be of the VMs in the backend pool.
+
+<img src="https://raw.githubusercontent.com/hisriram1996/hisriram1996.github.io/refs/heads/main/_pictures/_images_2025-10-26-Configure-passive-FTP-in-Azure-VMs-with-high-availability-using-Azure-Load-Balancer/image1.png">
+
 
 
 ## Understanding how passive FTP works with the Azure Load balancer
