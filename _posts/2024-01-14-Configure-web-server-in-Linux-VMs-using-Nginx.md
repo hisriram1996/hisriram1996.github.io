@@ -4,6 +4,13 @@ title: "Configure Linux VM as a web server using Nginx"
 author: Sriram H. Iyer
 ---
 
+## Table of Contents
+- [Overview](#overview)
+- [Network Architecture](#network-architecture)
+- [Configure web service using Nginx](#configure-web-service-using-nginx)
+- [Securing web service using TLS/SSL certificates](#securing-web-service-using-tlsssl-certificates)
+- [Verify accessing the Nginx](#verify-accessing-the-nginx)
+
 ## Overview
 
 [Nginx](https://nginx.org/en/) is an open source software for web serving, reverse proxying, caching, load balancing, media streaming, and more.
