@@ -4,6 +4,18 @@ title: "Configure BGP in an Ubuntu VM using BIRD"
 author: Sriram H. Iyer
 ---
 
+## Table of Contents
+- [What is BIRD?](#what-is-bird)
+- [Prerequisites](#prerequisites)
+- [Network Architecture](#network-architecture)
+- [Enable IP forwarding](#enable-ip-forwarding)
+- [Installing strongSwan and BIRD](#installing-strongswan-and-bird)
+- [Configuring VPNs using StrongSwan to Virtual Network Gateways
+](#configuring-vpns-using-strongswan-to-virtual-network-gateways)
+- [Identifying the BGP peer IP addresses](#identifying-the-bgp-peer-ip-addresses)
+- [Configuring BGP using BIRD](#configuring-bgp-using-bird)
+- [Verifying BGP configuration](#verifying-bgp-configuration)
+
 ## What is BIRD?
 
 [The BIRD Internet Routing Daemon](https://bird.network.cz/) is an open-source project for configuring dynamic IP routing in Linux, FreeBSD, and UNIX based Operating Systems.
@@ -12,7 +24,7 @@ BIRD allows the configuration of multiple routing protocols, such as RIP, OSPF, 
 
 In this example, we will configure BIRD with multiple BGP sessions in an Ubuntu VM, including sessions to an Azure Route Server and two Virtual Network Gateways over VPN. The same configuration can be applied to RedHat and other distributions.
 
-## Pre-requisites
+## Prerequisites
 
 Since we will be deploying resources in Azure, you would need an Azure subscription to follow through. Please note that Virtual Network Gateways of "VpnGw1" SKU are free for first 12 months for 750 hours, Azure Route Server, and Azure Bastion are not free services as stated in https://azure.microsoft.com/en-in/pricing/purchase-options/azure-account?icid=azurefreeaccount#free-services if you are using [Azure free account](https://azure.microsoft.com/en-in/pricing/offers/ms-azr-0044p/).
 
