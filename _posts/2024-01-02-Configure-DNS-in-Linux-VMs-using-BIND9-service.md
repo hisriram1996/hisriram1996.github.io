@@ -4,6 +4,15 @@ title: "Configure DNS in Linux VMs using BIND9 service"
 author: Sriram H. Iyer
 ---
 
+## Table of Contents
+- [Overview](#overview)
+- [DNS configuration scenarios with BIND9](#dns-configuration-scenarios-with-bind9)
+- [Prerequisites](#prerequisites)
+- [Network Architecture](#network-architecture)
+- [Configure DNS server using BIND9](#configure-dns-server-using-bind9)
+- [Configure custom DNS servers in Azure Virtual Network](#configure-custom-dns-servers-in-azure-virtual-network)
+- [Verify DNS resolution](#verify-dns-resolution)
+
 ## Overview
 
 Each and every device in computer network require an IP address for communication. Imagine the tediousness of typing IP addresses for connecting to servers hosting the websites.
