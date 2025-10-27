@@ -4,6 +4,14 @@ title: "Deploy a Nginx web application on ACI"
 author: Sriram H. Iyer
 ---
 
+## Table of Contents
+- [Overview](#overview)
+- [Prerequisites](#prerequisites)
+- [Create an ACR](#create-an-acr)
+- [Build an image using Azure CLI](#build-an-image-using-azure-cli)
+- [Deploy an ACI](#deploy-an-aci)
+- [Verify accessing the Nginx](#verify-accessing-the-nginx)
+
 ## Overview
 
 [Azure Container Instance (ACI)](https://learn.microsoft.com/en-us/azure/container-instances/container-instances-overview) is an on-demand serverless containerization service provided by Azure. ACI provides a very simple way to run the containers in Azure without orchestration.
@@ -12,7 +20,7 @@ Azure also provides [Azure Container Registry (ACR)](https://learn.microsoft.com
 
 In this blog, we will create an ACR, build image in ACR, and deploy ACI using the image from ACR.
 
-## Pre-requisites
+## Prerequisites
 
 We need to have [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli) installed for performing deployment.
 
