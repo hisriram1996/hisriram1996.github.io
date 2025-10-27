@@ -4,6 +4,13 @@ title: "Configure IPsec VPN in an Ubuntu VM using strongSwan"
 author: Sriram H. Iyer
 ---
 
+## Table of Contents
+- [What is strongSwan?](#what-is-strongswan)
+- [Network Architecture](#network-architecture)
+- [Enable IP forwarding](#enable-ip-forwarding)
+- [Configuring strongSwan](#configuring-strongswan)
+- [Verification of IPsec](#verification-of-ipsec)
+
 ## What is strongSwan?
 
 [strongSwan](https://docs.strongswan.org/docs/5.9/howtos/introduction.html) is an open-source package for IPsec VPN. You could use strongSwan for configuring VPN in Linux, UNIX, and BSD Operating Systems.
