@@ -4,6 +4,15 @@ title: "Containerize a Nginx web application using Docker"
 author: Sriram H. Iyer
 ---
 
+## Table of Contents
+- [Overview](#overview)
+- [Prerequisites](#prerequisites)
+- [Create a Docker container](#create-a-docker-container)
+- [Verify accessing the Nginx](#verify-accessing-the-nginx)
+- [Push image to Docker Hub](#push-image-to-docker-hub)
+- [Removing the container, images, and cleaning up unused data of Docker](#removing-the-container-images-and-cleaning-up-unused-data-of-docker)
+- [Pull image from Docker Hub](#pull-image-from-docker-hub)
+
 ## Overview
 
 Imagine you have spent much of your valuable time in developing an application and if works as expected in your system. However, you later find out that the same application does not work as expected for other users.
@@ -18,7 +27,7 @@ In order to containerize an application, we need help of container runtimes like
 
 In this blog we will use Docker to create a container running [Nginx](https://nginx.org/en/) web service.
 
-## Pre-requisites
+## Prerequisites
 
 Install [Docker Engine](https://docs.docker.com/engine/install/) or [Docker Desktop](https://docs.docker.com/desktop/install/windows-install/).
 
