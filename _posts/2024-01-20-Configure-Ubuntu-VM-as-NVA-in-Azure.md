@@ -4,6 +4,12 @@ title: "Configure Ubuntu VM as NVA in Azure"
 author: Sriram H. Iyer
 ---
 
+## Table of Contents
+- [Overview](#overview)
+- [Network Architecture](#network-architecture)
+- [Configure Ubuntu VM as NVA](#configure-ubuntu-vm-as-nva)
+- [Verify routing via NVA](#verify-routing-via-nva)
+
 ## Overview
 
 A [Network Virtual Appliance (NVA)](https://azure.microsoft.com/en-us/blog/best-practices-to-consider-before-deploying-a-network-virtual-appliance/) is a Virtual Machine with Azure Marketplace image capable of performing routing and other networking functionalities.
@@ -12,7 +18,7 @@ There are several images from vendors like Cisco, Juniper, Palo Alto, Barracuda,
 
 In this blog, we will deploy an Ubuntu VM in Azure with two network interfaces and to route traffic destined to internet from another VM.
 
-## Network Archirecture
+## Network Architecture
 
 We will need to deploy following Azure resources:
 - Virtual Network
