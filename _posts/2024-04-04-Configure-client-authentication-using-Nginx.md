@@ -4,6 +4,16 @@ title: "Configure client authentication using Nginx"
 author: Sriram H. Iyer
 ---
 
+## Table of Contents
+- [Overview](#overview)
+- [Prerequisites](#prerequisites)
+- [Network Architecture](#network-architecture)
+- [Generate SSL certificate](#generate-ssl-certificate)
+- [Configure secure web service using Nginx](#configure-secure-web-service-using-nginx)
+- [Create SSL certificate for client authentication](#create-ssl-certificate-for-client-authentication)
+- [Configuring client authentication or mutual TLS in Nginx](#configuring-client-authentication-or-mutual-tls-in-nginx)
+- [Verify accessing the Nginx](#verify-accessing-the-nginx)
+
 ## Overview
 
 In a previous [blog](https://hisriram1996.github.io/2024/01/14/Configure-web-server-in-Linux-VMs-using-Nginx.html), we had deployed an Ubuntu VM in Azure and configured it as a web server using [Nginx](https://nginx.org/en/).
@@ -14,7 +24,7 @@ For internal web-based applications, using SSL certificates for securing HTTPS c
 
 We will configure Nginx so that our web server would authenticate client as well during TLS handshake in this blog.
 
-## Pre-requisites
+## Prerequisites
 
 This blog assumes that you already went through the previous [blog](https://hisriram1996.github.io/2024/01/14/Configure-web-server-in-Linux-VMs-using-Nginx.html) and have basic knowledge of Nginx configuration as we would focus on configuring mTLS using Nginx and would touch suface of basic Nginx cofnigration for web server.
 
