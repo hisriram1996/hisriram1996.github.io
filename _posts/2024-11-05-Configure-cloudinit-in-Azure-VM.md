@@ -4,6 +4,13 @@ title: "Deploy a Linux VM in Azure with initial configuration using cloud-init s
 author: Sriram H. Iyer
 ---
 
+## Table of Contents
+- [Overview](#overview)
+- [Prerequisites](#prerequisites)
+- [Create the cloud-init script](#create-the-cloud-init-script)
+- [Deploy Azure Linux with cloud-init using Azure CLI](#deploy-azure-linux-with-cloud-init-using-azure-cli)
+- [Verifying the cloud-init configuration](#verifying-the-cloud-init-configuration)
+
 ## Overview
 
 We could deploy VMs in Azure using images available in [Azure Marketplace](https://azuremarketplace.microsoft.com/en-IN/).
@@ -14,7 +21,7 @@ we cloud also perform some initial configuration by executing a script while dep
 
 In this blog, we will deploy an Azure Linux VM with initial configuration using [cloud-init](https://cloudinit.readthedocs.io/en/latest/index.html). Our initial configuration will be running a Docker continer for static web content using Nginx.
 
-## Pre-requisites
+## Prerequisites
 
 You must have an active Azure subscription for following through the steps in this blog.
 
