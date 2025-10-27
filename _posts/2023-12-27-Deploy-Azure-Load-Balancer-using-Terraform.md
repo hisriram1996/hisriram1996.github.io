@@ -4,6 +4,13 @@ title: "Deploy Azure Load Balancer using Terraform"
 author: Sriram H. Iyer
 ---
 
+## Table of Contents
+- [Overview](#overview)
+- [Prerequisites](#prerequisites)
+- [Deploy a Public Load Balancer](#deploy-a-public-load-balancer)
+- [Deploy an Internal Load Balancer](#deploy-an-internal-load-balancer)
+- [Delete the resources](#delete-the-resources)
+
 ## Overview
 
 [Azure Load Balancer](https://learn.microsoft.com/en-us/azure/load-balancer/load-balancer-overview) is used for distributing load (incoming traffic) to multiple resources hosting the same application. This ensures high availability of the application as the Load Balancers distributes traffic to healthy resources.
