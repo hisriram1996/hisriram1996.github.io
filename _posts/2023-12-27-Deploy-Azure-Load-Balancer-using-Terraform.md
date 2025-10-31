@@ -112,7 +112,7 @@ echo $(terraform output -raw public_ip_address)
 
 You could verify if you could access our web page by using the frontend Public IP address of the Azure Load Balancer.
 
-<img width="302" alt="image" src="https://github.com/hisriram1996/hisriram1996.github.io/assets/56336513/f02b30f8-389f-4cd9-b4bb-f9717d1aaeb3">
+<img src="https://raw.githubusercontent.com/hisriram1996/hisriram1996.github.io/refs/heads/main/_pictures/_images_2023-12-27-Deploy-Azure-Load-Balancer-using-Terraform/image2.png">
 
 ## Deploy an Internal Load Balancer
 
