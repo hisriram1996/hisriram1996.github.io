@@ -1,0 +1,24 @@
+#cloud-config
+package_reboot_if_required: true
+package_update: true
+package_upgrade: true
+packages:
+  - apt-transport-https
+  - ca-certificates
+  - coreutils
+  - curl
+  - dnsutils
+  - gnupg
+  - lsb-release
+  - mtr
+  - nmap
+  - net-tools
+  - openssl
+  - tcpdump
+  - traceroute
+  - tcptraceroute
+  - whois
+runcmd:
+  - sudo sed -i 's/#Port 22/Port 22000/g' /etc/ssh/sshd_config
+  - sudo systemctl daemon-reload
+  - sudo systemctl restart ssh

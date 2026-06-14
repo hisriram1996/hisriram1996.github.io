@@ -1,0 +1,93 @@
+#cloud-config
+package_reboot_if_required: true
+package_update: true
+package_upgrade: true
+packages:
+  - apt-transport-https
+  - ca-certificates
+  - coreutils
+  - curl
+  - dnsutils
+  - gnupg
+  - lsb-release
+  - mtr
+  - nmap
+  - net-tools
+  - nginx
+  - openssl
+  - tcpdump
+  - traceroute
+  - tcptraceroute
+  - whois
+write_files:
+  - path: /etc/ssl/certs/root.cnf
+    content: |
+      [ v3_ca ]
+      basicConstraints = critical, CA:true, pathlen:1
+      keyUsage = critical, keyCertSign, cRLSign
+      subjectKeyIdentifier = hash
+      authorityKeyIdentifier = keyid:always,issuer
+    permissions: '0755'
+  - path: /etc/ssl/certs/intermediate.cnf
+    content: |
+      [ v3_intermediate_ca ]
+      basicConstraints = critical, CA:true, pathlen:0
+      keyUsage = critical, keyCertSign, cRLSign
+      subjectKeyIdentifier = hash
+      authorityKeyIdentifier = keyid:always,issuer
+    permissions: '0755'
+  - path: /etc/ssl/certs/server.cnf
+    content: |
+      [ v3_server ]
+      basicConstraints = critical, CA:false
+      keyUsage = critical, digitalSignature
+      extendedKeyUsage = serverAuth
+      subjectKeyIdentifier = hash
+      authorityKeyIdentifier = keyid,issuer
+      subjectAltName = @alt_names
+      
+      [ alt_names ]
+      DNS.1 = www.example.com
+    permissions: '0755'
+  - path: /var/www/www.example.com/index.html
+    content: |
+      <h1>Hello World!<h1>
+  - path: /etc/nginx/sites-enabled/www.example.com
+    content: |
+      server {
+          listen 80;
+          server_name www.example.com;
+          return 301 https://www.example.com$request_uri;
+      }
+      server {
+          listen 443 ssl;
+          listen [::]:443 ssl;
+          ssl_protocols TLSv1.2 TLSv1.3;
+          ssl_certificate /etc/ssl/certs/server.crt;
+          ssl_certificate_key /etc/ssl/private/server.key;
+          server_name www.example.com;
+          access_log /var/log/nginx/nginx.vhost.access.log;
+          error_log /var/log/nginx/nginx.vhost.error.log;
+          root /var/www/www.example.com;
+          index index.html;
+          location / {
+              try_files $uri $uri/ =404;
+          }
+      }
+    permissions: '0755'
+runcmd:
+  - sudo openssl ecparam -out /etc/ssl/private/root.key -name prime256v1 -genkey
+  - sudo openssl req -new -sha256 -key /etc/ssl/private/root.key -out /etc/ssl/certs/root.csr -subj "/C=IN/ST=TL/L=HYD/O=myOrg/OU=IT/CN=Example Root CA/emailAddress=hostmaster@example.com"
+  - sudo openssl x509 -req -sha256 -days 3650 -in /etc/ssl/certs/root.csr -signkey /etc/ssl/private/root.key -out /etc/ssl/certs/root.crt -extfile /etc/ssl/certs/root.cnf -extensions v3_ca
+  - sudo openssl ecparam -out /etc/ssl/private/intermediate.key -name prime256v1 -genkey
+  - sudo openssl req -new -sha256 -key /etc/ssl/private/intermediate.key -out /etc/ssl/certs/intermediate.csr -subj "/C=IN/ST=TL/L=HYD/O=myOrg/OU=IT/CN=Example Intermediate CA/emailAddress=hostmaster@example.com"
+  - sudo openssl x509 -req -in /etc/ssl/certs/intermediate.csr -CA /etc/ssl/certs/root.crt -CAkey /etc/ssl/private/root.key -CAcreateserial -out /etc/ssl/certs/intermediate.crt -days 1825 -sha256 -extfile /etc/ssl/certs/intermediate.cnf -extensions v3_intermediate_ca
+  - sudo openssl ecparam -out /etc/ssl/private/server.key -name prime256v1 -genkey
+  - sudo openssl req -new -sha256 -key /etc/ssl/private/server.key -out /etc/ssl/certs/server.csr -subj "/C=IN/ST=TL/L=HYD/O=myOrg/OU=IT/CN=www.example.com/emailAddress=hostmaster@example.com"
+  - sudo openssl x509 -req -in /etc/ssl/certs/server.csr -CA /etc/ssl/certs/intermediate.crt -CAkey /etc/ssl/private/intermediate.key -CAcreateserial -out /etc/ssl/certs/server.crt -days 365 -sha256 -extfile /etc/ssl/certs/server.cnf -extensions v3_server
+  - sudo cat /etc/ssl/certs/intermediate.crt >> /etc/ssl/certs/server.crt
+  - sudo cat /etc/ssl/certs/root.crt >> /etc/ssl/certs/server.crt
+  - sudo sed -i 's/#Port 22/Port 22000/g' /etc/ssh/sshd_config
+  - sudo systemctl daemon-reload
+  - sudo systemctl restart ssh
+  - sudo systemctl restart nginx
