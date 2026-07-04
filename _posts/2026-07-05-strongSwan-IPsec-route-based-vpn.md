@@ -97,7 +97,7 @@ With our network infrastructure ready and IP forwarding enabled in the OS and in
 
    Example:
 
-   <img src="https://raw.githubusercontent.com/hisriram1996/hisriram1996.github.io/main/_pictures/_images_2026-07-05-strongSwan-IPsec-route-based-vpn/image1.png">
+   <img src="https://raw.githubusercontent.com/hisriram1996/hisriram1996.github.io/refs/heads/main/_pictures/_images_2026-07-05-strongSwan-IPsec-route-based-vpn/image1.png">
 
 3. Configure IPsec VPN by editing the ipsec.conf file.
 
@@ -137,7 +137,7 @@ With our network infrastructure ready and IP forwarding enabled in the OS and in
    
    Example:
 
-   <img src="https://raw.githubusercontent.com/hisriram1996/hisriram1996.github.io/main/_pictures/_images_2026-07-05-strongSwan-IPsec-route-based-vpn/image2.png">
+   <img src="https://raw.githubusercontent.com/hisriram1996/hisriram1996.github.io/refs/heads/main/_pictures/_images_2026-07-05-strongSwan-IPsec-route-based-vpn/image2.png">
 
 5. Configure pre-shared key for VPN in ipsec.secrets file.
 
@@ -162,7 +162,7 @@ With our network infrastructure ready and IP forwarding enabled in the OS and in
 
    Example:
 
-   <img src="https://raw.githubusercontent.com/hisriram1996/hisriram1996.github.io/main/_pictures/_images_2026-07-05-strongSwan-IPsec-route-based-vpn/image3.png">
+   <img src="https://raw.githubusercontent.com/hisriram1996/hisriram1996.github.io/refs/heads/main/_pictures/_images_2026-07-05-strongSwan-IPsec-route-based-vpn/image3.png">
 
 ## Verification of IPsec
 
