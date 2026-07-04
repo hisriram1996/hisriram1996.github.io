@@ -25,7 +25,7 @@ Before we configure IPsec VPN using strongSwan, we need to deploy Azure VMs with
 
 Azure CLI commands for deploying a similar setup.
 
-```azurecli
+```bash
 read -p "Enter the username of the VM: " username
 read -s -p "Enter the password of the VM: " password
 read -p "Enter the resource group: " rg
@@ -48,7 +48,7 @@ az network nic create --name "vm-nic" --resource-group $rg --location $region --
 az network nic create --name "server-nic" --resource-group $rg --location $region --subnet "server-subnet" --vnet-name "test-datacenter" --private-ip-address "192.168.2.4" --ip-forwarding "true" --public-ip-address "test-serverip" --application-security-groups "test-asg"
 az vm create --name "test-vm" --resource-group $rg --location $region --image "canonical:ubuntu-24_04-lts:server:latest" --size "Standard_D2as_v4" --os-disk-name "vm-disk" --nics "vm-nic" --authentication-type "password" --admin-username $username --admin-password $password
 az vm create --name "test-server" --resource-group $rg --location $region --image "canonical:ubuntu-24_04-lts:server:latest" --size "Standard_D2as_v4" --os-disk-name "server-disk" --nics "server-nic" --authentication-type "password" --admin-username $username --admin-password $password
-az network bastion create --name "test-bastion" --resource-group $rg --vnet-name "test-datacenter" --sku Standard --public-ip-address "test-bastionip"
+az network bastion create --name "test-bastion" --resource-group $rg --vnet-name "test-datacenter" --sku Standard --public-ip-address "test-bastionip" --disable-copy-paste "false" --enable-ip-connect "true" --enable-tunneling "true" --file-copy "true"
 az network vnet-gateway create --name "test-vpngateway" --resource-group $rg --vnet "test-vnet" --gateway-type "Vpn" --sku "VpnGw1AZ" --public-ip-address "test-vpnip"
 az network local-gateway create --name "test-localgateway" --resource-group $rg --gateway-ip-address $(az network public-ip show --name "test-serverip" --resource-group $rg --query "ipAddress" -o tsv) --local-address-prefixes "192.168.2.0/24"
 az network vpn-connection create --name "test-vpnconnection" --resource-group $rg --vnet-gateway1 "test-vpngateway" --local-gateway2 "test-localgateway" --shared-key $psk
@@ -85,19 +85,19 @@ With our network infrastructure ready and IP forwarding enabled in the OS and in
    sudo apt-get install strongswan strongswan-pki libstrongswan-extra-plugins -y
    ```
 
-   Example:
-   
-   <img src="https://raw.githubusercontent.com/hisriram1996/hisriram1996.github.io/main/_pictures/_images_2023-12-13-strongSwan-IPsec/image3.png">
-
 2. Create a network namespace and VTI interface.
 
    ```bash
    sudo ip netns add vpn
+   sudo ip tunnel add vti0 local Private_IP_address_of_the_VM remote <VPN_peer_public_IP_address> mode vti key 42
+   sudo sysctl -w net.ipv4.conf.vti0.disable_policy=1
    sudo ip link set vti0 netns vpn
-   ip tunnel add vti0 local <Private_IP_address_of_the_VM> remote <VPN-gateway_public_IP_address> mode vti key 42
-   sysctl -w net.ipv4.conf.vti0.disable_policy=1
    sudo ip -n vpn link set vti0 up
    ```
+
+   Example:
+
+   <img src="https://raw.githubusercontent.com/hisriram1996/hisriram1996.github.io/main/_pictures/_images_2026-07-05-strongSwan-IPsec-route-based-vpn/image1.png">
 
 3. Configure IPsec VPN by editing the ipsec.conf file.
 
@@ -133,9 +133,11 @@ With our network infrastructure ready and IP forwarding enabled in the OS and in
 		   lifebytes=102400000
    ```
 
+   > The `mark` value of a conn must be identical to the `key` value of its corresponding VTI interface. If multiple VPN tunnels are configured, each `conn` must use a unique mark value that matches the key value of its associated VTI interface.
+   
    Example:
 
-   <img src="https://raw.githubusercontent.com/hisriram1996/hisriram1996.github.io/main/_pictures/_images_2023-12-13-strongSwan-IPsec/image4.png">
+   <img src="https://raw.githubusercontent.com/hisriram1996/hisriram1996.github.io/main/_pictures/_images_2026-07-05-strongSwan-IPsec-route-based-vpn/image2.png">
 
 5. Configure pre-shared key for VPN in ipsec.secrets file.
 
@@ -151,10 +153,6 @@ With our network infrastructure ready and IP forwarding enabled in the OS and in
 
    Please make sure that the same pre-shared key is configured on both IPsec peers. Otherwise, VPN will be down.
 
-   Example:
-
-   <img src="https://raw.githubusercontent.com/hisriram1996/hisriram1996.github.io/main/_pictures/_images_2023-12-13-strongSwan-IPsec/image5.png">
-
 7. Restart the strongSwan process.
 
    ```bash
@@ -164,7 +162,7 @@ With our network infrastructure ready and IP forwarding enabled in the OS and in
 
    Example:
 
-   <img src="https://raw.githubusercontent.com/hisriram1996/hisriram1996.github.io/main/_pictures/_images_2023-12-13-strongSwan-IPsec/image6.png">
+   <img src="https://raw.githubusercontent.com/hisriram1996/hisriram1996.github.io/main/_pictures/_images_2026-07-05-strongSwan-IPsec-route-based-vpn/image3.png">
 
 ## Verification of IPsec
 
