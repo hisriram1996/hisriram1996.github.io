@@ -133,7 +133,7 @@ With our network infrastructure ready and IP forwarding enabled in the OS and in
 		   lifebytes=102400000
    ```
 
-   > The `mark` value of a conn must be identical to the `key` value of its corresponding VTI interface. If multiple VPN tunnels are configured, each `conn` must use a unique mark value that matches the key value of its associated VTI interface.
+   > The `mark` value of a conn must be identical to the `key` value of its corresponding VTI interface. If multiple VPN tunnels are configured, each `conn` must use a unique mark value that matches the key value of its associated VTI interface and each VTI must be in its corresponding network namespace.
    
    Example:
 
