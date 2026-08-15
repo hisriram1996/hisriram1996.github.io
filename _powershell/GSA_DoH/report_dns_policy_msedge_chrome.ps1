@@ -23,7 +23,7 @@
     Companion script: disable_dns_policy_msedge_chrome.ps1
 
 .EXAMPLE
-    .\report-msedge-dns-registry.ps1
+    .\report_dns_policy_msedge_chrome.ps1
 #>
 
 [CmdletBinding()]
