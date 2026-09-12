@@ -43,7 +43,7 @@ This is how our architecture will look after the deployment is completed.
 
 1. Create a directory and make it as your current directory.
 
-   ```
+   ```bash
    mkdir load-balancer-demo
    cd load-balancer-demo
    ```
@@ -86,19 +86,19 @@ This is how our architecture will look after the deployment is completed.
 
 6. Initialize the working directory containing Terraform configuration files (```load-balancer-demo``` in our case).
 
-   ```
+   ```bash
    terraform init -upgrade
    ```
 
 7. Create an execution plan to preview the Terraform deployment.
 
-   ```
+   ```bash
    terraform plan -out main.tfplan
    ```
 
 8. Apply Terraform configuration previewed in the execution plan.
 
-   ```
+   ```bash
    terraform apply main.tfplan
    ```
 
@@ -106,7 +106,7 @@ This is how our architecture will look after the deployment is completed.
 
 When you apply the execution plan, Terraform displays the frontend public IP address. If you've cleared the screen, you can retrieve that value with the following Terraform command:
 
-```
+```bash
 echo $(terraform output -raw public_ip_address)
 ```
 
@@ -128,7 +128,7 @@ This is how our architecture will look after the deployment is completed.
 
 1. Create a directory and make it as your current directory.
 
-   ```
+   ```bash
    mkdir internal-load-balancer-demo
    cd internal-load-balancer-demo
    ```
@@ -171,19 +171,19 @@ This is how our architecture will look after the deployment is completed.
 
 6. Initialize the working directory containing Terraform configuration files (```internal-load-balancer-demo``` in our case).
 
-   ```
+   ```bash
    terraform init -upgrade
    ```
 
 7. Create an execution plan to preview the Terraform deployment.
 
-   ```
+   ```bash
    terraform plan -out main.tfplan
    ```
 
 8. Apply Terraform configuration previewed in the execution plan.
 
-   ```
+   ```bash
    terraform apply main.tfplan
    ```
 
@@ -197,7 +197,7 @@ Since frontend IP of an Internal Load Balancer is private IP, you cannot connect
 
 In order to avoid any extra charges, it is advisable to delete the resources which are not required. You could delete all the Azure resouces which we have deployed so far using Azure Portal or by executing the following Terraform commands.
 
-```
+```bash
 terraform plan -destroy -out main.destroy.tfplan
 terraform apply main.destroy.tfplan
 ```

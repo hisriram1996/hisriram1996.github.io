@@ -30,26 +30,26 @@ We will deploy an Azure Virtual Machine with Ubuntu OS for configuring it as a w
 
 1. Install Apache package.
 
-   ```
+   ```bash
    sudo apt-get update
    sudo apt-get install apache2
    ```
 
 2. Create directory for custom website.
 
-   ```
+   ```bash
    sudo mkdir /var/www/www.example.com
    ```
 
 3. Create a landing webpage.
 
-   ```
+   ```bash
    sudo vi /var/www/www.example.com/index.html
    ```
 
    Example of the landing page.
 
-   ```
+   ```bash
    <h1>Hello World!<h1>
    ```
 
@@ -59,13 +59,13 @@ We will deploy an Azure Virtual Machine with Ubuntu OS for configuring it as a w
 
 4. Create a virtual host file for your website.
 
-   ```
+   ```bash
    sudo vi /etc/apache2/sites-available/www.example.com.conf
    ```
 
    Configuration of virtual host file:
 
-   ```
+   ```bash
    <VirtualHost *:80>
          DocumentRoot /var/www/www.example.com
          ServerName www.example.com
@@ -81,19 +81,19 @@ We will deploy an Azure Virtual Machine with Ubuntu OS for configuring it as a w
 
 5. Enable the vitual host file.
 
-   ```
+   ```bash
    sudo a2ensite www.example.com
    ```
 
 6. Run an Apache configuration file syntax test. It parses the configuration files and either reports Syntax Ok or detailed information about the particular syntax error.
 
-   ```
+   ```bash
    sudo apache2ctl configtest
    ```
 
 7. Restart Apache service.
 
-   ```
+   ```bash
    sudo systemctl restart apache2
    ```
 
@@ -103,7 +103,7 @@ We will deploy an Azure Virtual Machine with Ubuntu OS for configuring it as a w
 
 8. Verify accessing the web site.
 
-   ```
+   ```bash
    curl -v http://www.example.com --resolve www.example.com:80:<Public IP of the VM>
    ```
 
@@ -129,7 +129,7 @@ In this section, we will create a self-signed SSL certificate and `.pfx` file us
 
 Since we will create self-signed SSL certificate with custom root CA using OpenSSL commands, we need to install OpenSSL package.
 
-```
+```bash
 sudo apt-get update
 sudo apt-get install openssl
 ```
@@ -138,7 +138,7 @@ We will create a self-signed certificate chain with own custom root CA.
 
 1. Create a key for root certificate
 
-   ```
+   ```bash
    openssl ecparam -out root.key -name prime256v1 -genkey
    ```
 
@@ -148,19 +148,19 @@ We will create a self-signed certificate chain with own custom root CA.
 
    We will be prompted for the password for the root key, and the organizational information for the custom CA such as Country/Region, State, Org, OU, and the fully qualified domain name (this is the domain of the issuer).
 
-   ```
+   ```bash
    openssl req -new -sha256 -key root.key -out root.csr
    ```
 
 3. Create the root certificate using the root CSR. We will use this to sign your server certificate.
 
-   ```
+   ```bash
    openssl x509 -req -sha256 -days 365 -in root.csr -signkey root.key -out root.crt
    ```
 
 4. Generate the key for the server certificate.
 
-   ```
+   ```bash
    openssl ecparam -out server.key -name prime256v1 -genkey
    ```
 
@@ -168,19 +168,19 @@ We will create a self-signed certificate chain with own custom root CA.
 
    > Please note that the CN (Common Name) for the server certificate must be different from the issuer's domain. For example, in this case, the CN for the issuer is `example.com` and the server certificate's CN is `www.example.com`.
 
-   ```
+   ```bash
    openssl req -new -sha256 -key server.key -out server.csr
    ```
 
 6. Create the server certificate signing it using root key
 
-   ```
+   ```bash
    openssl x509 -req -in server.csr -CA root.crt -CAkey root.key -CAcreateserial -out server.crt -days 365 -sha256
    ```
 
 7. Create a full chain certificate bundling root and server certificates.
 
-   ```
+   ```bash
    cat server.crt > bundle.crt
    cat root.crt >> bundle.crt
    ```
@@ -191,7 +191,7 @@ We will create a self-signed certificate chain with own custom root CA.
 
 8. Install root certificate in the [CA trust store](https://ubuntu.com/server/docs/security-trust-store) of Ubuntu. 
 
-   ```
+   ```bash
    sudo apt-get install -y ca-certificates
    sudo cp root.crt /usr/local/share/ca-certificates
    sudo update-ca-certificates
@@ -209,20 +209,20 @@ In this section, we will issue a trusted CA certificate using [Let's Encrypt](ht
 
 1. Snap package manager is needed to install the Certbot tool so first install the snapd.
 
-   ```
+   ```bash
    sudo apt-get install snapd
    sudo snap install snap-store
    ```
 
 2. Install Certbot in Ubuntu VM.
 
-   ```
+   ```bash
    sudo snap install --classic certbot
    ```
 
 3. Configure the Certbot with Apache and request SSL certificate from Let’s Encrypt.
 
-   ```
+   ```bash
    sudo certbot --apache -d example.com
    ```
 
@@ -232,13 +232,13 @@ In this section, we will issue a trusted CA certificate using [Let's Encrypt](ht
 
 Generated certificate files coud be found at `/etc/letsencrypt/live`.
 
-```
+```bash
 sudo ls -l /etc/letsencrypt/live/example.com
 ```
 
 Let’s Encrypt will generate following files:
 
-```
+```bash
 README		   	--> Contains information about generated certificate files by Let’s Encrypt
 cert.pem	      	--> Contains leaf certificate generated by Let’s Encrypt for your domain
 chain.pem	   	--> Contains intermediate and root certificates of Let’s Encrypt
@@ -264,7 +264,7 @@ In case you want to use self-signed certificate or the virtual host file is not 
 
 Configuration of virtual host file:
 
-```
+```bash
 <VirtualHost *:443>
       DocumentRoot /var/www/www.example.com
       ServerName www.example.com
@@ -281,7 +281,7 @@ The Apache server will only respond to HTTPS requests on port 443 with the above
 
 Configuration of virtual host file:
 
-```
+```bash
 <VirtualHost *:80>
       ServerName www.example.com
       Redirect permanent / https://www.example.com/
@@ -301,25 +301,25 @@ Configuration of virtual host file:
 
 Enable SSL module within the Apache configuration.
 
-```
+```bash
 sudo a2enmod ssl
 ```
 
 After the SSL module is enabled, enable the website's virtual host file.
 
-```
+```bash
 sudo a2ensite www.example.com
 ```
 
 Run an Apache configuration file syntax test. It parses the configuration files and either reports Syntax Ok or detailed information about the particular syntax error.
 
-```
+```bash
 sudo apache2ctl configtest
 ```
 
 Restart Apache service.
 
-```
+```bash
 sudo systemctl restart apache2
 ```
 

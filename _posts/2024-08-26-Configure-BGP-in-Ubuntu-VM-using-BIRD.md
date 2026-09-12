@@ -42,7 +42,7 @@ Before proceeding with configuration of VPN and BGP, we must enable *IP forwardi
 
 Please note that the commands to enable *IP forwarding* could differ depending on the distro.
 
-```
+```bash
 sudo sed -i 's/#net.ipv4.ip_forward=1/net.ipv4.ip_forward=1/g' /etc/sysctl.conf
 sudo sed -i 's/#net.ipv6.conf.all.forwarding=1/net.ipv6.conf.all.forwarding=1/g' /etc/sysctl.conf
 sudo sysctl -p
@@ -56,7 +56,7 @@ Example:
 
 We need to install strongSwan for configuring VPN to the Virtual Network Gateways and BIRD for configuring BGP.
 
-```
+```bash
 sudo apt-get update
 sudo apt-get install strongswan -y
 sudo apt-get install strongswan-pki -y
@@ -76,13 +76,13 @@ The step by step process for configuring VPN using stringSwan is explained in th
 
 We would configure two IPsec tunnels to the Virtual Network Gateway by editing the `ipsec.conf` file.
 
-```
+```bash
 sudo vi /etc/ipsec.conf
 ```
 
 Contents of the ```ipsec.conf``` file.
 
-```
+```bash
 config setup
       charondebug="all"
       uniqueids=yes
@@ -132,13 +132,13 @@ Example:
 
 We would the configure pre-shared key for VPNs in `ipsec.secrets` file.
 
-```
+```bash
 sudo vi /etc/ipsec.secrets
 ```
 
 Contents of the ```ipsec.secrets``` file.
 
-```
+```bash
 <Private_IP_address_of_the_VM> <Public_IP_address_of_Virtual_Network_Gateway_1> : PSK "<pre-shared_key>"
 <Private_IP_address_of_the_VM> <Public_IP_address_of_Virtual_Network_Gateway_2> : PSK "<pre-shared_key>"
 ```
@@ -151,7 +151,7 @@ Example:
 
 We would then restart the strongSwan process.
 
-```
+```bash
 sudo systemctl restart ipsec
 sudo systemctl status ipsec
 ```
@@ -162,7 +162,7 @@ Example:
 
 We could verify if the VPNs are established to both Virtual Network Gateways by executing commands below:
 
-```
+```bash
 sudo ipsec status
 ```
 
@@ -192,13 +192,13 @@ Example:
 
 Now that we know what are the BGP peer IPs, we could proceed with BGP configuration in our VM by editing the `/etc/bird/bird.conf` file.
 
-```
+```bash
 sudo vi /etc/bird/bird.conf
 ```
 
 Contents of the `/etc/bird/bird.conf` file.
 
-```
+```bash
 router id <Private_IP_address_of_the_VM>;
 protocol kernel {
       scan time 60;
@@ -277,7 +277,7 @@ Example:
 
 The BGP configuration in the BIRD configuration file `/etc/bird/bird.conf` is specified in the below code block.
 
-```
+```bash
 protocol bgp uniquebgpinstance {
 ...
 }
@@ -287,7 +287,7 @@ Since we have configured 4 BGP sessions, we have 4 code blocks for BGP protocol.
 
 In our BIRD configuration file, we have two BGP sessions towards the Virtual Network Gateways. The IP addresses 10.0.1.30 and 10.0.2.30 are BGP peer IP addresses of the Virtual Network Gateways and 10.0.0.4 is the IP address of our VM. We have used ASNs 65521 and 65522 in the Virtual Network Gateways and ASN 65523 for our VM. The `import all` and `export all` in the BBP code block allows learning and advertising all routes by VM.
 
-```
+```bash
 protocol bgp vnetgateway1 {
       router id 10.0.0.4;
       local 10.0.0.4 as 65523;
@@ -316,7 +316,7 @@ protocol bgp vnetgateway2 {
 
 In addition to the BGP code block, we have configured static routes to BGP peer IP addresses 10.0.1.30 and 10.0.2.30 of the Virtual Network Gateways. This is because we do not have any route in kernel to these IP address as we have configured policy-based VPN.
 
-```
+```bash
 protocol static {
       route 10.0.1.30/32 via 10.0.0.4;
       route 10.0.2.30/32 via 10.0.0.4;
@@ -327,7 +327,7 @@ In our architecture, we have deployed an Azure Route Server in the same Virtual 
 
 In order to avoid duplicate routes, we would *reject* the address space 10.0.0.0/24 advertised by Azure Route Server as it is of the Virtual Network where our VM is deployed.
 
-```
+```bash
 protocol bgp azurerouteserverinstanceprimary {
       router id 10.0.0.4;
       local 10.0.0.4 as 65523;
@@ -362,7 +362,7 @@ protocol bgp azurerouteserverinstancesecondary {
 
 We would be exporting all BGP routes to the kernel of our VM.
 
-```
+```bash
 router id 10.0.0.4;
 protocol kernel {
         scan time 60;
@@ -373,7 +373,7 @@ protocol kernel {
 
 We would restart the BIRD daemon for the configuration to take effect.
 
-```
+```bash
 sudo systemctl restart bird
 sudo systemctl status bird
 ```
