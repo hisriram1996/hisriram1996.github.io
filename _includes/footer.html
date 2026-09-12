@@ -2,27 +2,22 @@
   <data class="u-url" href="{{ "/" | relative_url }}"></data>
 
   <div class="wrapper footer-inner">
-    <div class="footer-brand">
-      <a class="site-title" rel="author" href="{{ "/" | relative_url }}">
-        <span class="site-mark" aria-hidden="true">SI</span>
-        <span>Sriram's IT Blog</span>
-      </a>
-      <p>{{ site.description | escape }}</p>
+    <div class="newsletter-copy">
+      <span class="eyebrow">Stay up to date</span>
+      <h2>Subscribe to my latest blogs</h2>
+      <p>Get an email when a new cloud, networking, or infrastructure article is published.</p>
     </div>
-    <div class="footer-links">
-      <div>
-        <strong>Explore</strong>
-        <a href="{{ '/' | relative_url }}">Blog</a>
-        <a href="{{ '/about/' | relative_url }}">About</a>
+    <form class="newsletter-form" action="https://formsubmit.co/{{ site.author.email }}" method="post">
+      <input type="hidden" name="_subject" value="New IT blog newsletter subscriber">
+      <input type="hidden" name="_captcha" value="false">
+      <input class="newsletter-honeypot" type="text" name="_honey" tabindex="-1" autocomplete="off">
+      <label for="newsletter-email">Email address</label>
+      <div class="newsletter-fields">
+        <input id="newsletter-email" name="email" type="email" autocomplete="email" placeholder="you@example.com" required>
+        <button type="submit">Subscribe</button>
       </div>
-      <div>
-        <strong>Connect</strong>
-        <a href="{{ site.feed.path | default: 'feed.xml' | absolute_url }}">RSS feed</a>
-        {%- if site.author.email -%}
-        <a class="u-email" href="mailto:{{ site.author.email }}">Email</a>
-        {%- endif %}
-      </div>
-    </div>
+      <small>No spam. Unsubscribe at any time.</small>
+    </form>
   </div>
   <div class="wrapper footer-bottom">
     <span>&copy; {{ 'now' | date: "%Y" }} {{ site.author.name | escape }}</span>
