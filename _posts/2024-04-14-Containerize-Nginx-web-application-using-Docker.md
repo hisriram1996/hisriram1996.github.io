@@ -48,7 +48,7 @@ A Docker container is a running instance of the Docker image. Multiple container
 
 Create a file named `examplefile.dockerfile` with contents below. This file is your Docker file.
 
-```
+```docker
 FROM ubuntu:latest
 
 RUN <<EOT bash
@@ -102,7 +102,7 @@ Example:
 
 Create the Nginx configuration file named `example.conf` with contents below. Please make sure that the `example.conf` and `examplefile.dockerfile` are in same directory.
 
-```
+```bash
 server {
         listen 80;
         server_name www.example.com;
@@ -134,7 +134,7 @@ server {
 
 Execute the command below to build a Docker image.
 
-```
+```docker
 docker build -f examplefile.dockerfile -t exampleimage .
 ```
 
@@ -148,7 +148,7 @@ Example:
 
 Execute the command below to run a Docker container.
 
-```
+```docker
 docker run -d -p 80:80 -p 443:443 --name examplecontainer exampleimage
 ```
 
@@ -195,7 +195,7 @@ After creating the repository in Docker Hub, we will push our image by following
 
 2. Update the tag of the image with username and name of the repository using `docker tag` command. You could also specify the tag name. The tag name indicates the specific version of the image. If the tag name is not specified then Docker will use the default tag _latest_. In our example, we have changed the image name from exampleimage to examplerepo with tag 1.0.0.
 
-   ```
+   ```docker
    docker tag exampleimage <username>/examplerepo:1.0.0
    ```
 
@@ -203,7 +203,7 @@ After creating the repository in Docker Hub, we will push our image by following
 
 3. Execute the `docker push` command to push the image to Docker Hub.
 
-   ```
+   ```docker
    docker push <username>/examplerepo:1.0.0
    ```
 
@@ -239,7 +239,7 @@ Now that we have removed the containers and images created so far and cleared ca
 
 We could pull image from Docker Hub using the `docker pull` command. We would pull the examplerepo:1.0.0 image from Docker Hub.
 
-```
+```docker
 docker pull <username>/examplerepo:1.0.0
 ```
 

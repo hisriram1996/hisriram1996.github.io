@@ -42,7 +42,7 @@ Before we configure mTLS in Nginx, we need to issue SSL certificates and confgur
 
 We would create a self-signed SSL certificate using OpenSSL in this example but you should consider using SSL certificate from a valid well-known CA liek DigiCert or GoDaddy for production workloads.
 
-```
+```bash
 sudo apt-get update
 sudo apt-get install openssl
 ```
@@ -51,7 +51,7 @@ We will create a self-signed certificate chain with own custom root CA.
 
 1. Create a key for root certificate
 
-   ```
+   ```bash
    openssl ecparam -out root.key -name prime256v1 -genkey
    ```
 
@@ -59,37 +59,37 @@ We will create a self-signed certificate chain with own custom root CA.
 
    > Please note that the CN (Common Name) of the root certificate must be different from that of the server certificate. In this example, the CN for the issuer is `example.com` and the server certificate's CN is `www.example.com`.
 
-   ```
+   ```bash
    openssl req -new -sha256 -key root.key -out root.csr
    ```
 
 3. Create the root certificate using the root CSR. We will use this to sign your server certificate.
 
-   ```
+   ```bash
    openssl x509 -req -sha256 -days 365 -in root.csr -signkey root.key -out root.crt
    ```
 
 4. Generate the key for the server certificate.
 
-   ```
+   ```bash
    openssl ecparam -out server.key -name prime256v1 -genkey
    ```
 
 5. Create the CSR for server certificate.
 
-   ```
+   ```bash
    openssl req -new -sha256 -key server.key -out server.csr
    ```
 
 6. Create the server certificate signing it using root key
 
-   ```
+   ```bash
    openssl x509 -req -in server.csr -CA root.crt -CAkey root.key -CAcreateserial -out server.crt -days 365 -sha256
    ```
 
 7. Create a full chain certificate bundling root and server certificates.
 
-   ```
+   ```bash
    cat server.crt > bundle.crt
    cat root.crt >> bundle.crt
    ```
@@ -100,7 +100,7 @@ We will create a self-signed certificate chain with own custom root CA.
 
 8. Install root certificate in the [CA trust store](https://ubuntu.com/server/docs/security-trust-store) of Ubuntu. 
 
-   ```
+   ```bash
    sudo apt-get install -y ca-certificates
    sudo cp root.crt /usr/local/share/ca-certificates
    sudo update-ca-certificates
@@ -114,38 +114,38 @@ We will create a self-signed certificate chain with own custom root CA.
 
 1. Install Nginx package.
 
-   ```
+   ```bash
    sudo apt-get update
    sudo apt-get install nginx
    ```
 
 2. Create directory for custom website.
 
-   ```
+   ```bash
    sudo mkdir /var/www/www.example.com
    ```
 
 3. Create a landing webpage.
 
-   ```
+   ```bash
    sudo vi /var/www/www.example.com/index.html
    ```
 
    Example of the landing page.
 
-   ```
+   ```bash
    <h1>Hello World!<h1>
    ```
 
 4. Create a virtual host file for your website.
 
-   ```
+   ```bash
    sudo vi /etc/nginx/sites-enabled/www.example.com
    ```
 
    Contents of virtual host file `/etc/nginx/sites-enabled/www.example.com`.
 
-   ```
+   ```bash
    server {
           listen 443 ssl;
           listen [::]:443 ssl;
@@ -169,7 +169,7 @@ We will create a self-signed certificate chain with own custom root CA.
 
 5. Restart Nginx service.
 
-   ```
+   ```bash
    sudo systemctl restart nginx
    ```
 
@@ -179,7 +179,7 @@ We will create a self-signed certificate chain with own custom root CA.
 
 6. Verify accessing the web site.
 
-   ```
+   ```bash
    curl -v http://www.example.com --resolve www.example.com:80:<Public IP of the VM>
    ```
 

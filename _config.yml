@@ -9,6 +9,9 @@ description: >
   of IT. Thanks for visiting and I hope you enjoy reading my posts!
 url: https://hisriram1996.github.io/
 markdown: kramdown
+kramdown:
+  syntax_highlighter_opts:
+    disable: true
 remote_theme: jekyll/minima
 plugins:
   - jekyll-feed

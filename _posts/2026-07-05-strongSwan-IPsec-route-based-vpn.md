@@ -25,7 +25,7 @@ Before we configure IPsec VPN using strongSwan, we need to deploy Azure VMs with
 
 Azure CLI commands for deploying a similar setup.
 
-```
+```bash
 read -p "Enter the username of the VM: " username
 read -s -p "Enter the password of the VM: " password
 read -p "Enter the resource group: " rg
@@ -58,7 +58,7 @@ az network vpn-connection create --name "test-vpnconnection" --resource-group $r
 
 In Ubuntu distros, you could enable IP forwarding by modifying the contents of ```/etc/sysctl.conf```. One of the easy way to do it is by using ```sed``` command as below.
 
-```
+```bash
 sudo sed -i 's/#net.ipv4.ip_forward=1/net.ipv4.ip_forward=1/g' /etc/sysctl.conf
 sudo sed -i 's/#net.ipv6.conf.all.forwarding=1/net.ipv6.conf.all.forwarding=1/g' /etc/sysctl.conf
 sudo sysctl -p
@@ -80,14 +80,14 @@ With our network infrastructure ready and IP forwarding enabled in the OS and in
 
 1. Install strongSwan.
 
-   ```
+   ```bash
    sudo apt-get update
    sudo apt-get install strongswan strongswan-pki libstrongswan-extra-plugins -y
    ```
 
 2. Create a network namespace and VTI interface.
 
-   ```
+   ```bash
    sudo ip netns add vpn
    sudo ip tunnel add vti0 local Private_IP_address_of_the_VM remote <VPN_peer_public_IP_address> mode vti key 42
    sudo sysctl -w net.ipv4.conf.vti0.disable_policy=1
@@ -101,13 +101,13 @@ With our network infrastructure ready and IP forwarding enabled in the OS and in
 
 3. Configure IPsec VPN by editing the ipsec.conf file.
 
-   ```
+   ```bash
    sudo vi /etc/ipsec.conf
    ```
 
    Contents of the ```ipsec.conf``` file.
 
-   ```
+   ```bash
    config setup
 		   charondebug="all"
 		   uniqueids=yes
@@ -141,13 +141,13 @@ With our network infrastructure ready and IP forwarding enabled in the OS and in
 
 5. Configure pre-shared key for VPN in ipsec.secrets file.
 
-   ```
+   ```bash
    sudo vi /etc/ipsec.secrets
    ```
 
    Contents of the ```ipsec.secrets``` file.
 
-   ```
+   ```bash
    <Private_IP_address_of_the_VM> <VPN_peer_IP_address> : PSK "<pre-shared_key>"
    ```
 
@@ -155,7 +155,7 @@ With our network infrastructure ready and IP forwarding enabled in the OS and in
 
 7. Restart the strongSwan process.
 
-   ```
+   ```bash
    sudo systemctl restart ipsec
    sudo systemctl status ipsec
    ```
@@ -172,7 +172,7 @@ You could perform stop and start operations using command ```sudo ipsec stop``` 
 
 In case the IPsec doess not establish, you could troubleshoot with the help of IPsec logs by using the command below.
 
-```
+```bash
 sudo cat /var/log/syslog | grep "ipsec"
 ```
 
