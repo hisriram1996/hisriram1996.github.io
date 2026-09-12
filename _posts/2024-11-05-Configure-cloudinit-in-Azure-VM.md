@@ -29,7 +29,7 @@ You must have an active Azure subscription for following through the steps in th
 
 We would create [cloud config](https://cloudinit.readthedocs.io/en/latest/explanation/about-cloud-config.html) file named `cloud-config.yml` file with contents below.
 
-```bash
+```
 #cloud-config
 package_reboot_if_required: true
 package_update: true
@@ -111,7 +111,7 @@ The `cloud config` file is in YAML format consisting several modules for verious
 
 The following module of the cloud config file updates from the repository and installed all the upgradable packages in the VM after which the packages listed will be installed. We could also specify the package manager to be used to install the packages and add additional repository using this module.
 
-```bash
+```
 package_reboot_if_required: true
 package_update: true
 package_upgrade: true
@@ -124,7 +124,7 @@ packages:
 
 In the `write_files` module of our `cloud config` file, we will create example.conf and example.dockerfile for the Nginx configuration and Docker File for running a container. This module enables us to specify the absolute path and permissions of the file.
 
-```bash
+```
 write_files:
   - path: path/to/file
     content: |
@@ -134,7 +134,7 @@ write_files:
 
 We will specify execution of required commands in the module `runcmd`.
 
-```bash
+```
 runcmd:
   - sudo iptables -A INPUT -p tcp -m tcp --dports 80,443 -j ACCEPT
   - sudo iptables-save > /etc/systemd/scripts/ip4save
@@ -153,50 +153,50 @@ We will deploy an Azure Linux VM using Azure CLI.
 
 1. Login to Azure.
 
-```bash
+```
 az login
 ```
 
 2. Create a Resource Group.
 
-```bash
+```
 az group create --name "testgrp" --location "centralindia"
 ```
 
 3. Create a public IP for the Azure VM.
 
-```bash
+```
 az network public-ip create --name "testip" --resource-group "testgrp" --location "centralindia" --allocation-method "Static" --sku "Standard" --tier "Regional"
 ```
 
 4. Create an Application Security Group. We will be associating our VM' NIC to this ASG later.
 
-```bash
+```
 az network asg create --name "testasg" --resource-group "testgrp" --location "centralindia"
 ```
 
 5. Create NSG with rule to allow traffic on ports 80 and 443 to the ASG and associate it to the VM subnet. The ASG will be associated to the NIC, thus, allowing traffic to the VM.
 
-```bash
+```
 az network nsg create --name "testnsg" --resource-group "testgrp" --location "centralindia"
 az network nsg rule create --name "inboundwebtraffic" --nsg-name "testnsg" --resource-group "testgrp" --priority 800 --direction "Inbound" --access "Allow" --source-address-prefixes "Internet" --source-port-ranges "*" --destination-asgs "testasg" --destination-port-ranges 80 443 --protocol "Tcp"
 ```
 
 6. Create VNet with a subnet.
 
-```bash
+```
 az network vnet create --name "testvnet" --resource-group "testgrp" --location "centralindia" --address-prefixes "192.168.100.0/24" --subnet-name "vmsubnet" --subnet-prefixes "192.168.100.0/29" --network-security-group "testnsg"
 ```
 
 7. Create a NIC associating it to the ASG and public IP created in the previous steps.
 
-```bash
+```
 az network nic create --name "testnic" --resource-group "testgrp" --location "centralindia" --subnet "vmsubnet" --application-security-groups "testasg" --ip-forwarding "false" --private-ip-address "192.168.100.4" --subnet "vmsubnet" --vnet-name "testvnet" --public-ip-address "testip"
 ```
 
 8. Create the Azure Linux VM. Our cloud config file will be passed on using the flag `--custom-data` of [az vm create](https://learn.microsoft.com/en-us/cli/azure/vm?view=azure-cli-latest#az-vm-create) command.
 
-```bash
+```
 az vm create --name "testvm" --resource-group "testgrp" --location "centralindia" --image "MicrosoftCBLMariner:cbl-mariner:cbl-mariner-2:latest" --size "Standard_B2s_v2" --security-type "Standard" --nics "testnic" --nic-delete-option "Delete" --os-disk-delete-option "Delete" --authentication-type "password" --admin-username "username" --admin-password "password" --custom-data "cloud-config.yml"
 ```
 
@@ -204,13 +204,13 @@ az vm create --name "testvm" --resource-group "testgrp" --location "centralindia
 
 We could verify if the `cloud-init` configuration was successfull by checking if we could get response from Nginx container in the VM using `curl` utility.
 
-```powershell
+```
 $publicip = az network public-ip show --name "testip" --resource-group "testgrp" --query ipAddress --output tsv
 curl.exe http://www.example.com --resolve www.example.com:80:$publicip
 curl.exe -k https://www.example.com --resolve www.example.com:443:$publicip
 ```
 
-```bash
+```
 publicip=$(az network public-ip show --name "testip" --resource-group "testgrp" --query ipAddress --output tsv)
 curl http://www.example.com --resolve www.example.com:80:$publicip
 curl -k https://www.example.com --resolve www.example.com:443:$publicip

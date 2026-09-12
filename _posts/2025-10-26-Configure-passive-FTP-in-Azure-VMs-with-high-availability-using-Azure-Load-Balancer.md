@@ -33,7 +33,7 @@ We will deploy an Azure Load Balancer with two Azure VMs and another VM as FTP c
 
 You could also deploy the Azure resources in the above architecture using Azure CLI commands below.
 
-```bash
+```
 region="centralindia"
 az group create --name "test-group" --location "$region"
 rg=$(az group show --name "test-group" --query "name" --output "tsv")
@@ -58,19 +58,19 @@ az vm create --name "windows-server" --resource-group "$rg" --location "$region"
 
 Please install the `vsftpd` package in the Ubuntu VMs in the backend pool of the Load Balancer using the command below.
 
-```bash
+```
 sudo apt-get update && sudo apt-get install -y vsftpd
 ```
 
 Please edit the configuration file `/etc/vsftpd.conf` with below content for running FTP in passive mode.
 
-```bash
+```
 sudo vi /etc/vsftpd.conf
 ```
 
 Contents of the `/etc/vsftpd.conf` file.
 
-```bash
+```
 ftpd_banner=You are in the FTP server.
 listen=YES
 anonymous_enable=NO
@@ -89,7 +89,7 @@ data_connection_timeout=240
 
 Please restart the `vsftpd.service` using the command below.
 
-```bash
+```
 sudo systemctl restart vsftpd.service
 ```
 
@@ -127,7 +127,7 @@ We are bypassing the Azure Load Balancer for FTP data connections because a port
 
 We can configure FTP in active mode by configuring the `/etc/vsftpd.conf` with contents below.
 
-```bash
+```
 ftpd_banner=You are in the FTP server.
 listen=YES
 anonymous_enable=NO
@@ -143,7 +143,7 @@ cmds_denied=EPSV
 
 We will configure the loopback interface with the frontend IP address of the Load Balancer in the backend VMs. The **vsftpd** service will listen to the Azure Load Balancer's frontend IP address.
 
-```bash
+```
 sudo ip addr add <frontend_IP>/<subnet_mask> dev lo:0
 ```
 

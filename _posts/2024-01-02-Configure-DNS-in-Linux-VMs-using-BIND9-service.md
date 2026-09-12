@@ -57,26 +57,26 @@ We also have another VM configured as web server which we will try to access fro
 
 BIND9 is available in the Main repository. No additional repository needs to be enabled for BIND9. Execute the following command to install the bind9 package.
 
-```bash
+```
 sudo apt-get update
 sudo apt-get install bind9
 ```
 
 You could optionally install the BIND9 documentation (very useful).
 
-```bash
+```
 sudo apt-get install bind9-doc
 ```
 
 It is a best practice to install ```bind9utils``` package for verifying configuration of BIND9. This package provides number utilities like ```named-checkconf``` and ```named-checkzone``` which would indicate any errors in the configuration.
 
-```bash
+```
 sudo apt-get install bind9-utils
 ```
 
 You may also want to install ```dnsutils``` package for DNS utilities like ```dig``` or ```nslookup```.
 
-```bash
+```
 sudo apt-get install dnsutils
 ```
 
@@ -88,13 +88,13 @@ Example:
 
 The default configuration of BIND9 acts as a caching server. We need to edit the ```/etc/bind/named.conf.options``` file using editors like ```vi```, ```nano```, ```code```, etc.  to set the IP addresses of Azure recursive resolver.
 
-```bash
+```
 sudo vi /etc/bind/named.conf.options
 ```
 
 Contents of the ```/etc/bind/named.conf.options``` file.
 
-```bash
+```
 // Create an ACL (Access Control List) to allow name queries from trusted networks
 acl "trusted" {
         10.0.0.0/16; // IP address prefix of the Virtual Network
@@ -137,7 +137,7 @@ Example:
 
 If the ```bind9utils``` was installed in previous step, then we could verify if our configuration of ```/etc/bind/named.conf.options``` has any errors by executing ```named-checkconf``` command.
 
-```bash
+```
 named-checkconf -p /etc/bind/named.conf.options
 ```
 
@@ -157,19 +157,19 @@ Authoritative nameservers host one or more DNS zones and provide authoritative a
 
 We will create a forward zone file for our custom domain ```example.internal```. We will use an existing zone file ```/etc/bind/db.local``` as a template to create our own zone file ```/etc/bind/zone.example.internal```.
 
-```bash
+```
 sudo cp /etc/bind/db.local /etc/bind/zone.example.internal
 ```
 
 We will now edit our zone file ```/etc/bind/zone.example.internal``` with our custom domain ```example.internal``` and records.
 
-```bash
+```
 sudo vi /etc/bind/zone.example.internal
 ```
 
 Contents of the zone file ```/etc/bind/zone.example.internal```.
 
-```bash
+```
 ;
 ; BIND data file for local loopback interface
 ;
@@ -194,13 +194,13 @@ Example:
 
 We will edit the ```/etc/bind/named.conf.local``` file to add our DNS zone ```example.internal``` to BIND9.
 
-```bash
+```
 sudo vi /etc/bind/named.conf.local
 ```
 
 Contents of the zone file ```/etc/bind/named.conf.local```.
 
-```bash
+```
 zone "example.internal" {
         type master;
         file "/etc/bind/zone.example.internal";
@@ -224,13 +224,13 @@ Please note that for IP prefix length smaller than /24 create reverse lookup zon
 
 We will now create a reverse zone file ```/etc/bind/0.0.10.in-addr.arpa``` using an existing reverse zone file ```/etc/bind/db.127``` as a template.
 
-```bash
+```
 sudo cp /etc/bind/db.127 /etc/bind/0.0.10.in-addr.arpa
 ```
 
 Contents of the zone file ```/etc/bind/0.0.10.in-addr.arpa```.
 
-```bash
+```
 ;
 ; BIND reverse data file for local loopback interface
 ;
@@ -254,13 +254,13 @@ Example:
 
 We will edit the ```/etc/bind/named.conf.local``` file to add our reverse zone ```/etc/bind/0.0.10.in-addr.arpa``` to BIND9.
 
-```bash
+```
 sudo vi /etc/bind/named.conf.local
 ```
 
 Contents of the zone file ```/etc/bind/named.conf.local```.
 
-```bash
+```
 zone "example.internal" {
         type master;
         file "/etc/bind/zone.example.internal";
@@ -285,7 +285,7 @@ We could verify if the configuration of our forward and reverse zone files are c
 
 Verify forward zone file.
 
-```bash
+```
 named-checkzone example.internal /etc/bind/zone.example.internal
 ```
 
@@ -295,7 +295,7 @@ If everything is configured correctly then the output should be similar to:
 
 Verify reverse zone file.
 
-```bash
+```
 named-checkzone 0.0.10.in-addr.arpa /etc/bind/0.0.10.in-addr.arpa
 ```
 
@@ -307,7 +307,7 @@ The output should be similar to:
 
 Once you have made changes to the zone files BIND9 needs to be restarted for the changes to take effect.
 
-```bash
+```
 sudo systemctl restart bind9.service
 ```
 
@@ -319,7 +319,7 @@ Before we configure our secondary nameserver, we must allow zone transfer on the
 
 In primary nameserver:
 
-```bash
+```
 zone "<zone name>" {
         type master;
         file "<zone file>";
@@ -334,13 +334,13 @@ Please install BIND9 in secondary nameserver by executing ```sudo apt-get update
 
 We will edit the configuration file ```/etc/bind/named.conf.local``` and add following declarations for the Forward and Reverse zones.
 
-```bash
+```
 sudo vi /etc/bind/named.conf.local
 ```
 
 Contents of the zone file ```/etc/bind/named.conf.local```.
 
-```bash
+```
 zone "example.internal" {
         type secondary;
         file "zone.example.internal";
