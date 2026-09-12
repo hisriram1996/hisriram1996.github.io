@@ -13,13 +13,35 @@ layout: base
         <a class="button button-secondary" href="{{ '/about/' | relative_url }}">About the author</a>
       </div>
     </div>
-    <div class="hero-visual" aria-hidden="true">
-      <div class="cloud-orbit orbit-one"></div>
-      <div class="cloud-orbit orbit-two"></div>
-      <svg viewBox="0 0 180 140" role="img">
-        <path d="M48 111h84a32 32 0 0 0 4-63.7A48 48 0 0 0 45 60a26 26 0 0 0 3 51Z"></path>
-        <path d="m67 79 15 15 31-35"></path>
-      </svg>
+    <div class="hero-visual" role="img" aria-label="Linux, Azure, AWS, cloud, Docker, containers, and virtualization">
+      <div class="technology-logo logo-linux">
+        <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M11 23c-2 1-3 3-3 5h16c0-2-1-4-3-5M12 21c-2-2-2-5-1-8l2-7c1-3 5-3 6 0l2 7c1 3 1 6-1 8-2 2-6 2-8 0Z"></path><circle cx="14" cy="11" r="1"></circle><circle cx="18" cy="11" r="1"></circle><path d="m14 15 2 1 2-1"></path></svg>
+        <span>Linux</span>
+      </div>
+      <div class="technology-logo logo-azure">
+        <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M14 4 5 27h8l2-5h9l3 5-8-23h-5Zm2 8 4 7h-7l3-7Z"></path></svg>
+        <span>Azure</span>
+      </div>
+      <div class="technology-logo logo-aws">
+        <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M7 12h18M9 12l3 8 4-8 4 8 3-8M7 24c5 3 13 3 18 0M22 23l3 1-1 3"></path></svg>
+        <span>AWS</span>
+      </div>
+      <div class="technology-logo logo-cloud">
+        <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M8 25h16a6 6 0 0 0 1-12 9 9 0 0 0-17 2 5 5 0 0 0 0 10Z"></path></svg>
+        <span>Cloud</span>
+      </div>
+      <div class="technology-logo logo-docker">
+        <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M5 16h22c0 7-5 11-12 11S5 23 5 16Zm4-4h4v4H9Zm5 0h4v4h-4Zm5 0h4v4h-4Zm-5-5h4v4h-4Zm10 6c1-2 3-3 5-2-1 3-3 4-6 4"></path></svg>
+        <span>Docker</span>
+      </div>
+      <div class="technology-logo logo-containers">
+        <svg viewBox="0 0 32 32" aria-hidden="true"><path d="m16 4 11 6v12l-11 6-11-6V10l11-6Zm0 0v12m11-6-11 6-11-6m11 6v12"></path></svg>
+        <span>Containers</span>
+      </div>
+      <div class="technology-logo logo-virtualization">
+        <svg viewBox="0 0 32 32" aria-hidden="true"><rect x="4" y="5" width="19" height="14" rx="2"></rect><rect x="9" y="12" width="19" height="14" rx="2"></rect><path d="M15 29h7"></path></svg>
+        <span>Virtualization</span>
+      </div>
     </div>
   </section>
 
@@ -67,26 +89,7 @@ layout: base
         {%- if paginator.previous_page %}
           <li><a href="{{ paginator.previous_page_path | relative_url }}" class="previous-page">{{ paginator.previous_page }}</a></li>
         {%- else %}
-          <li><div class="pager-edge">•            <section class="newsletter" id="newsletter">
-              <div class="newsletter-copy">
-                <span class="eyebrow">Stay up to date</span>
-                <h2>Get new guides in your inbox.</h2>
-                <p>Subscribe for occasional updates when a new cloud, networking, or infrastructure article is published.</p>
-              </div>
-              <form class="newsletter-form" action="https://formsubmit.co/{{ site.author.email }}" method="post">
-                <input type="hidden" name="_subject" value="New IT blog newsletter subscriber">
-                <input type="hidden" name="_captcha" value="false">
-                <input class="newsletter-honeypot" type="text" name="_honey" tabindex="-1" autocomplete="off">
-                <label for="newsletter-email">Email address</label>
-                <div class="newsletter-fields">
-                  <input id="newsletter-email" name="email" type="email" autocomplete="email" placeholder="you@example.com" required>
-                  <button type="submit">Subscribe</button>
-                </div>
-                <small>No spam. Unsubscribe at any time.</small>
-              </form>
-            </section>
-
-          </div></li>
+          <li><div class="pager-edge">•</div></li>
         {%- endif %}
           <li><div class="current-page">{{ paginator.page }}</div></li>
         {%- if paginator.next_page %}
