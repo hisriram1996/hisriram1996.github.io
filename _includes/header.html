@@ -1,10 +1,12 @@
 <header class="site-header">
-
-  <div class="wrapper">
+  <div class="wrapper header-inner">
     {%- assign default_paths = site.pages | map: "path" -%}
     {%- assign page_paths = site.header_pages | default: default_paths -%}
     {%- assign titles_size = site.pages | map: 'title' | join: '' | size -%}
-    <a class="site-title" rel="author" href="{{ "/" | relative_url }}">{{ site.title | escape }}</a>
+    <a class="site-title" rel="author" href="{{ "/" | relative_url }}">
+      <span class="site-mark" aria-hidden="true">SI</span>
+      <span>Sriram's IT Blog</span>
+    </a>
 
     {%- if titles_size > 0 -%}
       <nav class="site-nav">
@@ -18,6 +20,7 @@
         </label>
 
         <div class="trigger">
+          <a class="page-link" href="{{ "/" | relative_url }}">Blog</a>
           {%- for path in page_paths -%}
             {%- assign my_page = site.pages | where: "path", path | first -%}
             {%- if my_page.title -%}
@@ -27,5 +30,14 @@
         </div>
       </nav>
     {%- endif -%}
+    <button class="theme-toggle" type="button" aria-label="Switch to dark mode" aria-pressed="false">
+      <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="12" r="4"></circle>
+        <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path>
+      </svg>
+      <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M20.5 14.2A8 8 0 0 1 9.8 3.5 8.5 8.5 0 1 0 20.5 14.2Z"></path>
+      </svg>
+    </button>
   </div>
 </header>
