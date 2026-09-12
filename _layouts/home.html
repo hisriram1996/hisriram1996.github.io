@@ -3,12 +3,25 @@ layout: base
 ---
 
 <div class="home">
-  {%- if page.title -%}
-    <h1 class="page-heading">{{ page.title }}</h1>
-  {%- endif -%}
-
-  {{ content }}
-
+  <section class="hero">
+    <div class="hero-copy">
+      <span class="eyebrow">Cloud &amp; infrastructure engineering</span>
+      <h1>Practical guides for building in the cloud.</h1>
+      <p>{{ site.description }}</p>
+      <div class="hero-actions">
+        <a class="button button-primary" href="#latest-posts">Explore the latest posts</a>
+        <a class="button button-secondary" href="{{ '/about/' | relative_url }}">About the author</a>
+      </div>
+    </div>
+    <div class="hero-visual" aria-hidden="true">
+      <div class="cloud-orbit orbit-one"></div>
+      <div class="cloud-orbit orbit-two"></div>
+      <svg viewBox="0 0 180 140" role="img">
+        <path d="M48 111h84a32 32 0 0 0 4-63.7A48 48 0 0 0 45 60a26 26 0 0 0 3 51Z"></path>
+        <path d="m67 79 15 15 31-35"></path>
+      </svg>
+    </div>
+  </section>
 
   {% if site.paginate %}
     {% assign posts = paginator.posts %}
@@ -18,25 +31,35 @@ layout: base
 
 
   {%- if posts.size > 0 -%}
-    {%- if page.list_title -%}
-      <h2 class="post-list-heading">{{ page.list_title }}</h2>
-    {%- endif -%}
-    <ul class="post-list">
+    <section class="latest-posts" id="latest-posts">
+      <div class="section-heading">
+        <div>
+          <span class="eyebrow">Learn and build</span>
+          <h2>{{ page.list_title | default: "Latest articles" }}</h2>
+        </div>
+        <a class="feed-link" href="{{ site.feed.path | default: 'feed.xml' | relative_url }}">Follow via RSS <span aria-hidden="true">→</span></a>
+      </div>
+      <ul class="post-list">
       {%- assign date_format = site.minima.date_format | default: "%b %-d, %Y" -%}
       {%- for post in posts -%}
-      <li>
-        <span class="post-meta">{{ post.date | date: date_format }}</span>
-        <h3>
+      <li class="post-card">
+        <div class="post-card-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M4 4h16v16H4zM8 9h8M8 13h8M8 17h5"></path></svg>
+        </div>
+        <div class="post-card-content">
+          <span class="post-meta">{{ post.date | date: date_format }}</span>
+          <h3>
           <a class="post-link" href="{{ post.url | relative_url }}">
             {{ post.title | escape }}
           </a>
-        </h3>
-        {%- if site.show_excerpts -%}
-          {{ post.excerpt }}
-        {%- endif -%}
+          </h3>
+          <p>{{ post.excerpt | strip_html | normalize_whitespace | truncate: 150 }}</p>
+          <a class="read-more" href="{{ post.url | relative_url }}" aria-label="Read {{ post.title | escape }}">Read article <span aria-hidden="true">→</span></a>
+        </div>
       </li>
       {%- endfor -%}
-    </ul>
+      </ul>
+    </section>
 
     {% if site.paginate %}
       <div class="pager">
@@ -44,7 +67,26 @@ layout: base
         {%- if paginator.previous_page %}
           <li><a href="{{ paginator.previous_page_path | relative_url }}" class="previous-page">{{ paginator.previous_page }}</a></li>
         {%- else %}
-          <li><div class="pager-edge">•</div></li>
+          <li><div class="pager-edge">•            <section class="newsletter" id="newsletter">
+              <div class="newsletter-copy">
+                <span class="eyebrow">Stay up to date</span>
+                <h2>Get new guides in your inbox.</h2>
+                <p>Subscribe for occasional updates when a new cloud, networking, or infrastructure article is published.</p>
+              </div>
+              <form class="newsletter-form" action="https://formsubmit.co/{{ site.author.email }}" method="post">
+                <input type="hidden" name="_subject" value="New IT blog newsletter subscriber">
+                <input type="hidden" name="_captcha" value="false">
+                <input class="newsletter-honeypot" type="text" name="_honey" tabindex="-1" autocomplete="off">
+                <label for="newsletter-email">Email address</label>
+                <div class="newsletter-fields">
+                  <input id="newsletter-email" name="email" type="email" autocomplete="email" placeholder="you@example.com" required>
+                  <button type="submit">Subscribe</button>
+                </div>
+                <small>No spam. Unsubscribe at any time.</small>
+              </form>
+            </section>
+
+          </div></li>
         {%- endif %}
           <li><div class="current-page">{{ paginator.page }}</div></li>
         {%- if paginator.next_page %}
