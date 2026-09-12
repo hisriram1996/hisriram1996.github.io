@@ -12,6 +12,19 @@ layout: null
         <meta name="viewport" content="width=device-width, initial-scale=1"/>
         <title><xsl:value-of select="rss/channel/title"/> · RSS Feed</title>
         <link rel="stylesheet" href="{{ '/assets/css/style.css' | relative_url }}"/>
+        <script>
+          (function () {
+            var savedTheme;
+            try {
+              savedTheme = localStorage.getItem("theme");
+            } catch (error) {
+              savedTheme = null;
+            }
+            var theme = savedTheme || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+            document.documentElement.setAttribute("data-theme", theme);
+          }());
+        </script>
+        <script src="{{ '/assets/js/theme.js' | relative_url }}" defer="defer"></script>
       </head>
       <body>
         <header class="site-header">
@@ -20,6 +33,15 @@ layout: null
               <span class="site-mark" aria-hidden="true">SI</span>
               <xsl:value-of select="rss/channel/title"/>
             </a>
+            <button class="theme-toggle" type="button" aria-label="Switch to dark mode" aria-pressed="false">
+              <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="12" r="4"></circle>
+                <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path>
+              </svg>
+              <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M20.5 14.2A8 8 0 0 1 9.8 3.5 8.5 8.5 0 1 0 20.5 14.2Z"></path>
+              </svg>
+            </button>
           </div>
         </header>
 
