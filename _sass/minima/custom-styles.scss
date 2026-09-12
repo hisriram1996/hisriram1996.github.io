@@ -366,6 +366,55 @@ a:hover {
   font-weight: 650;
 }
 
+.feed-page {
+  padding-top: 64px;
+  padding-bottom: 72px;
+}
+
+.feed-heading {
+  max-width: 760px;
+  margin-bottom: 40px;
+}
+
+.feed-heading h1 {
+  margin-bottom: 16px;
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  letter-spacing: -0.04em;
+  line-height: 1.1;
+}
+
+.feed-heading p {
+  color: var(--muted);
+}
+
+.feed-help {
+  font-size: 0.9rem;
+}
+
+.feed-items {
+  display: grid;
+  gap: 20px;
+}
+
+.feed-item {
+  padding: 26px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-raised);
+  box-shadow: 0 2px 8px rgba(20, 45, 80, 0.04);
+}
+
+.feed-item h2 {
+  margin-bottom: 12px;
+  font-size: 1.35rem;
+  line-height: 1.3;
+}
+
+.feed-item p:last-child {
+  margin-bottom: 0;
+  color: var(--muted);
+}
+
 .post-list {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
