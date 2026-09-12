@@ -1,7 +1,12 @@
 <meta name="theme-color" content="#0f6cbd">
 <script>
   (function () {
-    var savedTheme = localStorage.getItem("theme");
+    var savedTheme;
+    try {
+      savedTheme = localStorage.getItem("theme");
+    } catch (error) {
+      savedTheme = null;
+    }
     var theme = savedTheme || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
     document.documentElement.setAttribute("data-theme", theme);
   }());

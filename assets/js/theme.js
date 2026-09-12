@@ -15,7 +15,11 @@
   toggle.addEventListener("click", function () {
     var theme = root.getAttribute("data-theme") === "dark" ? "light" : "dark";
     root.setAttribute("data-theme", theme);
-    localStorage.setItem("theme", theme);
+    try {
+      localStorage.setItem("theme", theme);
+    } catch (error) {
+      // The selected theme still applies when storage is unavailable.
+    }
     updateToggle(theme);
   });
 }());

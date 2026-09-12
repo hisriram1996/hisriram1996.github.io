@@ -114,7 +114,7 @@ a:hover {
   background: transparent;
 }
 
-.site-nav .trigger {
+.site-nav input ~ .trigger {
   display: flex;
   align-items: center;
   gap: 30px;
@@ -694,11 +694,16 @@ table td {
     position: absolute;
     top: 48px;
     right: -48px;
+    display: none;
     padding: 8px 0;
     border: 1px solid var(--border);
     border-radius: 8px;
     background: var(--surface-raised);
     box-shadow: var(--shadow);
+  }
+
+  .site-nav input:checked ~ .trigger {
+    display: block;
   }
 
   .site-nav .trigger .page-link {
