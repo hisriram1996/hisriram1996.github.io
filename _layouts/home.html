@@ -67,26 +67,7 @@ layout: base
         {%- if paginator.previous_page %}
           <li><a href="{{ paginator.previous_page_path | relative_url }}" class="previous-page">{{ paginator.previous_page }}</a></li>
         {%- else %}
-          <li><div class="pager-edge">•            <section class="newsletter" id="newsletter">
-              <div class="newsletter-copy">
-                <span class="eyebrow">Stay up to date</span>
-                <h2>Get new guides in your inbox.</h2>
-                <p>Subscribe for occasional updates when a new cloud, networking, or infrastructure article is published.</p>
-              </div>
-              <form class="newsletter-form" action="https://formsubmit.co/{{ site.author.email }}" method="post">
-                <input type="hidden" name="_subject" value="New IT blog newsletter subscriber">
-                <input type="hidden" name="_captcha" value="false">
-                <input class="newsletter-honeypot" type="text" name="_honey" tabindex="-1" autocomplete="off">
-                <label for="newsletter-email">Email address</label>
-                <div class="newsletter-fields">
-                  <input id="newsletter-email" name="email" type="email" autocomplete="email" placeholder="you@example.com" required>
-                  <button type="submit">Subscribe</button>
-                </div>
-                <small>No spam. Unsubscribe at any time.</small>
-              </form>
-            </section>
-
-          </div></li>
+          <li><div class="pager-edge">•</div></li>
         {%- endif %}
           <li><div class="current-page">{{ paginator.page }}</div></li>
         {%- if paginator.next_page %}

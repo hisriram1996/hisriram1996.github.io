@@ -2,13 +2,21 @@
   <data class="u-url" href="{{ "/" | relative_url }}"></data>
 
   <div class="wrapper footer-inner">
-    <div class="footer-brand">
-      <a class="site-title" rel="author" href="{{ "/" | relative_url }}">
-        <span class="site-mark" aria-hidden="true">SI</span>
-        <span>Sriram's IT Blog</span>
-      </a>
-      <p>{{ site.description | escape }}</p>
-    </div>
+    <section class="footer-newsletter" aria-labelledby="footer-newsletter-title">
+      <h2 id="footer-newsletter-title">Subscribe to my latest blogs</h2>
+      <p>Get an email when a new cloud, networking, or infrastructure article is published.</p>
+      <form class="newsletter-form" action="https://formsubmit.co/{{ site.author.email }}" method="post">
+        <input type="hidden" name="_subject" value="New IT blog newsletter subscriber">
+        <input type="hidden" name="_captcha" value="false">
+        <input class="newsletter-honeypot" type="text" name="_honey" tabindex="-1" autocomplete="off" aria-hidden="true">
+        <label for="footer-newsletter-email">Email address</label>
+        <div class="newsletter-fields">
+          <input id="footer-newsletter-email" name="email" type="email" autocomplete="email" placeholder="you@example.com" required>
+          <button type="submit">Subscribe</button>
+        </div>
+        <small>No spam. Unsubscribe at any time.</small>
+      </form>
+    </section>
     <div class="footer-links">
       <div>
         <strong>Explore</strong>

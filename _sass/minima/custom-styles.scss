@@ -531,11 +531,20 @@ a:hover {
   gap: 80px;
 }
 
-.footer-brand p {
+.footer-newsletter h2 {
+  margin-bottom: 8px;
+  font-size: 1.2rem;
+}
+
+.footer-newsletter p {
   max-width: 560px;
-  margin-top: 18px;
+  margin-bottom: 18px;
   color: var(--muted);
   font-size: 0.88rem;
+}
+
+.footer-newsletter .newsletter-form {
+  max-width: 560px;
 }
 
 .footer-links {
