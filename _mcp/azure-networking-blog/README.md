@@ -1,14 +1,19 @@
 # Azure Networking Blog MCP server
 
-Local, read-only MCP server for:
-https://techcommunity.microsoft.com/category/azure/blog/azurenetworkingblog
+This is a read-only local MCP server for [Azure Networking Blog](https://techcommunity.microsoft.com/category/azure/blog/azurenetworkingblog).
+
+The MCP server can be added to GitHub Copilot CLI.
+
+```powershell
+copilot mcp add azure-networking-blog -- node "C:\Users\sriramiyer\azure-networking-blog-mcp\src\server.js"
+```
 
 ## Run
 
 Requires Node.js 22 or later. In PowerShell:
 
 ```powershell
-Set-Location C:\Users\sriramiyer\azure-networking-blog-mcp
+Set-Location "<path\to\azure-networking-blog-mcp>"
 npm ci
 npm test
 npm run test:live
